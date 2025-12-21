@@ -1,0 +1,11 @@
+<div class="task-list">
+  @for (task of tasks; track task.id) {
+    <div class="task-item" [class.completed]="task.isCompleted">
+      <span>{{ task.title }}</span>
+      @if (task.description) {
+        <p>{{ task.description }}</p>
+      }
+    </div>
+  }
+</div>
+

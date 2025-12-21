@@ -1,0 +1,170 @@
+<div class="tasks-page">
+  <!-- Header con estadísticas -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>
+        <i class="pi pi-check-square"></i>
+        Tareas Diarias
+      </h1>
+      <p class="subtitle">Gestiona tus tareas y mantén el control de tu día</p>
+    </div>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="pi pi-list"></i>
+      </div>
+      <div class="stat-value">{{ tasks().length }}</div>
+      <div class="stat-label">Total de Tareas</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%); color: #d97706;">
+        <i class="pi pi-clock"></i>
+      </div>
+      <div class="stat-value">{{ pendingTasks().length }}</div>
+      <div class="stat-label">Pendientes</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #fce7f3 0%, #f9a8d4 100%); color: #be185d;">
+        <i class="pi pi-exclamation-circle"></i>
+      </div>
+      <div class="stat-value">{{ urgentTasks().length }}</div>
+      <div class="stat-label">Urgentes</div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #dc2626;"></i>
+      <p>Cargando tareas...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-message">
+      <i class="pi pi-exclamation-triangle"></i>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Formulario de nueva tarea -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        <i class="pi pi-plus-circle"></i>
+        Nueva Tarea
+      </h2>
+    </div>
+    
+    <div class="new-task-form">
+      <div class="form-row">
+        <div class="form-group" style="flex: 2;">
+          <label>Título</label>
+          <input
+            [(ngModel)]="newTaskTitle"
+            placeholder="¿Qué necesitas hacer?"
+            (keyup.enter)="createTask()"
+            class="form-input"
+          />
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>Prioridad</label>
+          <select [(ngModel)]="newTaskPriority" class="form-select">
+            <option [value]="TaskPriority.Low">🟢 Baja</option>
+            <option [value]="TaskPriority.Medium">🟡 Media</option>
+            <option [value]="TaskPriority.High">🟠 Alta</option>
+            <option [value]="TaskPriority.Urgent">🔴 Urgente</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Descripción (opcional)</label>
+        <textarea
+          [(ngModel)]="newTaskDescription"
+          placeholder="Detalles adicionales..."
+          class="form-textarea"
+          rows="3"
+        ></textarea>
+      </div>
+      
+      <button (click)="createTask()" class="btn-primary">
+        <i class="pi pi-plus"></i>
+        Crear Tarea
+      </button>
+    </div>
+  </div>
+
+  <!-- Lista de tareas -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        <i class="pi pi-list"></i>
+        Tareas Pendientes
+      </h2>
+      <span class="badge">{{ pendingTasks().length }}</span>
+    </div>
+    
+    <div class="tasks-list">
+      @if (pendingTasks().length === 0) {
+        <div class="empty-state">
+          <i class="pi pi-check-circle" style="font-size: 3rem; color: #10b981;"></i>
+          <h3>¡Todo listo!</h3>
+          <p>No tienes tareas pendientes</p>
+        </div>
+      }
+      
+      @for (task of pendingTasks(); track task.id) {
+        <div class="task-item" 
+             [class.priority-urgent]="task.priority === TaskPriority.Urgent"
+             [class.priority-high]="task.priority === TaskPriority.High"
+             [class.priority-medium]="task.priority === TaskPriority.Medium"
+             [class.priority-low]="task.priority === TaskPriority.Low">
+          
+          <div class="task-checkbox">
+            <input
+              type="checkbox"
+              [checked]="task.isCompleted"
+              (change)="completeTask(task.id)"
+              [id]="'task-' + task.id"
+            />
+            <label [for]="'task-' + task.id"></label>
+          </div>
+          
+          <div class="task-content">
+            <div class="task-title">{{ task.title }}</div>
+            @if (task.description) {
+              <div class="task-description">{{ task.description }}</div>
+            }
+          </div>
+          
+          <div class="task-meta">
+            <span class="task-priority-badge" 
+                  [class.urgent]="task.priority === TaskPriority.Urgent"
+                  [class.high]="task.priority === TaskPriority.High"
+                  [class.medium]="task.priority === TaskPriority.Medium"
+                  [class.low]="task.priority === TaskPriority.Low">
+              @switch (task.priority) {
+                @case (0) { 🟢 Baja }
+                @case (1) { 🟡 Media }
+                @case (2) { 🟠 Alta }
+                @case (3) { 🔴 Urgente }
+              }
+            </span>
+            @if (task.dueDate) {
+              <span class="task-due-date">
+                <i class="pi pi-calendar"></i>
+                {{ task.dueDate | date: 'dd/MM/yyyy' }}
+              </span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+

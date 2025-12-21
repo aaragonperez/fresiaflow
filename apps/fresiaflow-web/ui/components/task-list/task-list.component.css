@@ -1,0 +1,17 @@
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-item {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.task-item.completed {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+

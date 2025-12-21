@@ -1,0 +1,32 @@
+<table class="invoice-table">
+  <thead>
+    <tr>
+      <th>Número</th>
+      <th>Proveedor</th>
+      <th>Fecha Emisión</th>
+      <th>Fecha Vencimiento</th>
+      <th>Monto</th>
+      <th>Estado</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (invoice of invoices; track invoice.id) {
+      <tr>
+        <td>{{ invoice.invoiceNumber }}</td>
+        <td>{{ invoice.supplierName }}</td>
+        <td>{{ invoice.issueDate | date }}</td>
+        <td>{{ invoice.dueDate | date }}</td>
+        <td>{{ invoice.amount.value | currency: invoice.amount.currency }}</td>
+        <td>
+          @switch (invoice.status) {
+            @case (0) { Pendiente }
+            @case (1) { Pagada }
+            @case (2) { Vencida }
+            @case (3) { Cancelada }
+          }
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>
+

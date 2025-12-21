@@ -1,0 +1,142 @@
+<div class="invoices-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>
+        <i class="pi pi-file-pdf"></i>
+        Facturas
+      </h1>
+      <p class="subtitle">Gestiona y controla todas tus facturas</p>
+    </div>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="pi pi-file"></i>
+      </div>
+      <div class="stat-value">{{ invoices().length }}</div>
+      <div class="stat-label">Total Facturas</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%); color: #d97706;">
+        <i class="pi pi-clock"></i>
+      </div>
+      <div class="stat-value">{{ pendingInvoices().length }}</div>
+      <div class="stat-label">Pendientes</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%); color: #b91c1c;">
+        <i class="pi pi-exclamation-triangle"></i>
+      </div>
+      <div class="stat-value">{{ overdueInvoices().length }}</div>
+      <div class="stat-label">Vencidas</div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #d1fae5 0%, #6ee7b7 100%); color: #059669;">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="stat-value">{{ paidInvoices().length }}</div>
+      <div class="stat-label">Pagadas</div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #dc2626;"></i>
+      <p>Cargando facturas...</p>
+    </div>
+  }
+
+  @if (error()) {
+    <div class="error-message">
+      <i class="pi pi-exclamation-triangle"></i>
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Subir factura -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        <i class="pi pi-upload"></i>
+        Subir Nueva Factura
+      </h2>
+    </div>
+    
+    <div class="upload-form">
+      <div class="file-upload-area">
+        <input
+          type="file"
+          accept=".pdf"
+          (change)="onFileSelected($event)"
+          #fileInput
+          id="fileInput"
+          style="display: none;"
+        />
+        <label for="fileInput" class="file-upload-label">
+          <i class="pi pi-cloud-upload" style="font-size: 3rem; color: #dc2626; margin-bottom: 1rem;"></i>
+          <div class="upload-text">
+            <strong>Haz clic para subir</strong> o arrastra aquí
+          </div>
+          <div class="upload-hint">PDF, máximo 10MB</div>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Facturas pendientes -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        <i class="pi pi-clock"></i>
+        Facturas Pendientes
+      </h2>
+      <span class="badge">{{ pendingInvoices().length }}</span>
+    </div>
+    
+    <app-invoice-table [invoices]="pendingInvoices()"></app-invoice-table>
+  </div>
+
+  <!-- Facturas vencidas -->
+  @if (overdueInvoices().length > 0) {
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <i class="pi pi-exclamation-triangle"></i>
+          Facturas Vencidas
+        </h2>
+        <span class="badge" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+          {{ overdueInvoices().length }}
+        </span>
+      </div>
+      
+      <app-invoice-table [invoices]="overdueInvoices()"></app-invoice-table>
+    </div>
+  }
+
+  <!-- Todas las facturas -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        <i class="pi pi-list"></i>
+        Todas las Facturas
+      </h2>
+      <span class="badge">{{ invoices().length }}</span>
+    </div>
+    
+    @if (invoices().length === 0) {
+      <div class="empty-state">
+        <i class="pi pi-inbox" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+        <p>No hay facturas registradas</p>
+      </div>
+    } @else {
+      <app-invoice-table [invoices]="invoices()"></app-invoice-table>
+    }
+  </div>
+</div>
+

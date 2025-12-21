@@ -1,0 +1,132 @@
+/* Estilos adicionales para tarjetas y componentes */
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb;
+}
+
+.card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #fee2e2;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title i {
+  color: #dc2626;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(220, 38, 38, 0.15);
+  border-color: #dc2626;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);
+  color: #dc2626;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.p-badge {
+  background: #dc2626;
+}
+
+a {
+  color: #dc2626;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: #b91c1c;
+  text-decoration: underline;
+}
+
+button {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+input, textarea, select {
+  padding: 10px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+

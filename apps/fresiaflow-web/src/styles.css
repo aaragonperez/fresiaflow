@@ -1,0 +1,144 @@
+@import "primeng/resources/themes/lara-light-blue/theme.css";
+@import "primeng/resources/primeng.css";
+@import "primeicons/primeicons.css";
+@import "theme.css";
+
+:root {
+  --primary-red: #dc2626;
+  --primary-red-dark: #b91c1c;
+  --primary-red-light: #ef4444;
+  --secondary-red: #fca5a5;
+  --accent-red: #fee2e2;
+  --dark-bg: #1f2937;
+  --light-bg: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-800: #1f2937;
+  --sidebar-width: 280px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  color: #1f2937;
+  margin: 0;
+  padding: 0;
+  background: var(--light-bg);
+}
+
+/* Sobrescribir colores primarios de PrimeNG */
+.p-component {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.p-button {
+  background: var(--primary-red);
+  border-color: var(--primary-red);
+}
+
+.p-button:hover {
+  background: var(--primary-red-dark);
+  border-color: var(--primary-red-dark);
+}
+
+/* Estilos personalizados para FresiaFlow */
+.p-sidebar {
+  background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+  border-right: 1px solid var(--gray-200);
+}
+
+.p-menubar {
+  border: none;
+  border-radius: 0;
+  background: linear-gradient(135deg, var(--primary-red) 0%, var(--primary-red-dark) 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+}
+
+.p-menubar .p-menubar-root-list > .p-menuitem > .p-menuitem-link {
+  color: white;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.p-menubar .p-menubar-root-list > .p-menuitem > .p-menuitem-link:hover {
+  background: rgba(255,255,255,0.15);
+  transform: translateY(-1px);
+}
+
+/* Menú lateral personalizado */
+.p-menu {
+  border: none;
+  background: transparent;
+}
+
+.p-menu .p-menuitem-link {
+  border-radius: 8px;
+  margin: 4px 8px;
+  padding: 12px 16px;
+  transition: all 0.3s ease;
+  color: var(--gray-800);
+}
+
+.p-menu .p-menuitem-link:hover {
+  background: var(--accent-red);
+  color: var(--primary-red-dark);
+  transform: translateX(4px);
+}
+
+.p-menu .p-menuitem-link:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.p-menu .p-menuitem-icon {
+  color: var(--primary-red);
+  margin-right: 12px;
+  font-size: 1.1rem;
+}
+
+.p-menu .p-submenu-header {
+  font-weight: 600;
+  color: var(--gray-800);
+  padding: 12px 16px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
+}
+
+a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+input, textarea, select {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
