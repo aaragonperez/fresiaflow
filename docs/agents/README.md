@@ -13,6 +13,9 @@ Este directorio contiene la especificación completa de cada agente del sistema.
 | REV | Code Reviewer | [REV.md](REV.md) | Revisión de código, calidad |
 | COG | Optimizador Cognitivo | [COG.md](COG.md) | Desbloques, planificación, claridad |
 | PO | Product Owner | [PO.md](PO.md) | Priorización, MVP, valor de negocio |
+| TEST | Experto Tester | [TEST.md](TEST.md) | Tests unitarios, integración, cobertura |
+| DOC | Documentador Código | [DOC.md](DOC.md) | Documentación técnica, XML comments |
+| AYU | Generador Ayudas | [AYU.md](AYU.md) | Ayudas usuario, guías, FAQs web |
 
 ## Uso
 
