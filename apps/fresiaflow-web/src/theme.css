@@ -130,3 +130,64 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
+/* Overrides dependientes de tema */
+:root {
+  --ff-primary: var(--primary-color, #dc2626);
+  --ff-primary-strong: var(--primary-color-strong, #b91c1c);
+  --ff-secondary: var(--secondary-color, #fca5a5);
+  --ff-accent: var(--accent-color, #fee2e2);
+  --ff-text: var(--text-color, #1f2937);
+}
+
+.card-header {
+  border-bottom-color: var(--ff-accent);
+}
+
+.card-title {
+  color: var(--ff-text);
+}
+
+.card-title i {
+  color: var(--ff-primary);
+}
+
+.stat-card {
+  border-color: #e5e7eb;
+}
+
+.stat-card:hover {
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--ff-primary) 20%, transparent);
+  border-color: var(--ff-primary);
+}
+
+.stat-icon {
+  background: linear-gradient(135deg, var(--ff-accent) 0%, var(--ff-secondary) 100%);
+  color: var(--ff-primary);
+}
+
+.stat-value {
+  color: var(--ff-text);
+}
+
+.p-badge {
+  background: var(--ff-primary);
+}
+
+button {
+  background: linear-gradient(135deg, var(--ff-primary) 0%, var(--ff-primary-strong) 100%);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ff-primary) 20%, transparent);
+}
+
+button:hover {
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--ff-primary) 30%, transparent);
+}
+
+input, textarea, select {
+  border: 2px solid #e5e7eb;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--ff-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ff-primary) 20%, transparent);
+}
+

@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { MainLayoutComponent } from './layout/main-layout.component';
+import { ThemeService } from '../infrastructure/services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -8,7 +9,13 @@ import { MainLayoutComponent } from './layout/main-layout.component';
   imports: [RouterOutlet, MainLayoutComponent],
   template: `<app-main-layout></app-main-layout>`
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'FresiaFlow';
+  private themeService = inject(ThemeService);
+
+  ngOnInit(): void {
+    // Inicializar el servicio de temas para aplicar el tema guardado
+    this.themeService.currentTheme();
+  }
 }
 

@@ -1,0 +1,68 @@
+<div class="tasks-widget">
+  <div class="widget-header">
+    <h3 class="widget-title">
+      <i class="pi pi-check-square"></i>
+      Tareas Pendientes
+    </h3>
+    <span class="task-count">{{ tasks.length }}</span>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando tareas...</span>
+    </div>
+  } @else if (error) {
+    <div class="error-state">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ error }}</span>
+    </div>
+  } @else if (tasks.length === 0) {
+    <div class="empty-state">
+      <i class="pi pi-check-circle"></i>
+      <p>No hay tareas pendientes</p>
+    </div>
+  } @else {
+    <div class="tasks-list">
+      @for (task of tasks; track task.id) {
+        <div class="task-item" 
+             [class.overdue]="isOverdue(task)"
+             [class.clickable]="task.type === TaskType.Invoice"
+             (click)="onTaskClick(task)"
+             [attr.role]="task.type === TaskType.Invoice ? 'button' : null"
+             [attr.tabindex]="task.type === TaskType.Invoice ? 0 : null">
+          <div class="task-icon">
+            <i [class]="'pi ' + getTaskTypeIcon(task.type)"></i>
+          </div>
+          <div class="task-content">
+            <div class="task-header">
+              <h4 class="task-title">{{ task.title }}</h4>
+              <span class="task-type-badge">{{ getTaskTypeText(task.type) }}</span>
+            </div>
+            @if (task.description) {
+              <p class="task-description">{{ task.description }}</p>
+            }
+            <div class="task-footer">
+              <span class="task-priority" [class]="getPriorityClass(task.priority)">
+                <i class="pi pi-flag"></i>
+                {{ getPriorityText(task.priority) }}
+              </span>
+              @if (task.dueDate) {
+                <span class="task-due-date" [class.overdue]="isOverdue(task)">
+                  <i class="pi pi-calendar"></i>
+                  {{ formatDate(task.dueDate) }}
+                </span>
+              }
+            </div>
+          </div>
+          @if (task.type === TaskType.Invoice) {
+            <div class="task-action-hint">
+              <i class="pi pi-arrow-right"></i>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+

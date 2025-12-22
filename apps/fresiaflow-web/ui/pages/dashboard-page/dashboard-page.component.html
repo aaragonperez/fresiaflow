@@ -1,0 +1,91 @@
+<div class="dashboard-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>
+        <i class="pi pi-home"></i>
+        Dashboard
+      </h1>
+      <p class="subtitle">Vista general del estado operativo y financiero</p>
+    </div>
+    <button pButton icon="pi pi-refresh" label="Actualizar" class="p-button-outlined" (click)="refresh()"></button>
+  </div>
+
+  <!-- Estadísticas Rápidas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #fee2e2; color: #dc2626;">
+        <i class="pi pi-check-square"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Tareas Pendientes</div>
+        <div class="stat-value">{{ pendingTasks().length }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #fef2f2; color: #dc2626;">
+        <i class="pi pi-flag"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Alta Prioridad</div>
+        <div class="stat-value">{{ highPriorityTasks().length }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #fee2e2; color: #dc2626;">
+        <i class="pi pi-bell"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Alertas Críticas</div>
+        <div class="stat-value">{{ criticalAlerts().length }}</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background: #dbeafe; color: #2563eb;">
+        <i class="pi pi-wallet"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Saldo Total</div>
+        <div class="stat-value">
+          @if (bankSummary()) {
+            {{ bankSummary()!.totalBalance | number:'1.2-2' }} {{ bankSummary()!.primaryCurrency }}
+          } @else {
+            -
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Widgets Grid -->
+  <div class="widgets-grid">
+    <!-- Tareas Pendientes -->
+    <div class="widget-container">
+      <app-tasks-widget
+        [tasks]="tasks()"
+        [loading]="tasksLoading()"
+        [error]="tasksError()"
+        (taskClick)="onTaskClick($event)">
+      </app-tasks-widget>
+    </div>
+
+    <!-- Resumen Bancario -->
+    <div class="widget-container">
+      <app-bank-summary-widget
+        [bankSummary]="bankSummary()"
+        [loading]="bankSummaryLoading()"
+        [error]="bankSummaryError()">
+      </app-bank-summary-widget>
+    </div>
+
+    <!-- Alertas -->
+    <div class="widget-container widget-full-width">
+      <app-alerts-widget
+        [alerts]="alerts()"
+        [loading]="alertsLoading()"
+        [error]="alertsError()">
+      </app-alerts-widget>
+    </div>
+  </div>
+</div>
+

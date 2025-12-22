@@ -142,19 +142,100 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                     b.ToTable("Invoices");
                 });
 
+            modelBuilder.Entity("FresiaFlow.Domain.Invoices.IssuedInvoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ClientName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ClientTaxId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasDefaultValue("ES");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("IssueDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Province")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Series")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SourceFilePath")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Series", "InvoiceNumber")
+                        .IsUnique();
+
+                    b.ToTable("IssuedInvoices");
+                });
+
             modelBuilder.Entity("FresiaFlow.Domain.InvoicesReceived.InvoiceReceived", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Currency")
                         .IsRequired()
                         .HasMaxLength(3)
                         .HasColumnType("character varying(3)");
 
-                    b.Property<DateTime?>("DueDate")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<decimal?>("ExtractionConfidence")
+                        .HasPrecision(3, 2)
+                        .HasColumnType("numeric(3,2)");
 
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
@@ -168,22 +249,31 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("OriginalFilePath")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<DateTime>("ProcessedAt")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<string>("PaymentType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("ProcessedFilePath")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                    b.Property<DateTime>("ReceivedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SupplierAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("SupplierName")
                         .IsRequired()
@@ -193,6 +283,13 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                     b.Property<string>("SupplierTaxId")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<decimal?>("TaxRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -232,6 +329,40 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                     b.HasIndex("InvoiceReceivedId", "LineNumber");
 
                     b.ToTable("InvoiceReceivedLines", (string)null);
+                });
+
+            modelBuilder.Entity("FresiaFlow.Domain.InvoicesReceived.InvoiceReceivedPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BankTransactionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("InvoiceReceivedId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("InvoiceReceivedId1")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BankTransactionId");
+
+                    b.HasIndex("InvoiceReceivedId");
+
+                    b.HasIndex("InvoiceReceivedId1");
+
+                    b.HasIndex("PaymentDate");
+
+                    b.ToTable("InvoiceReceivedPayments", (string)null);
                 });
 
             modelBuilder.Entity("FresiaFlow.Domain.Reconciliation.ReconciliationCandidate", b =>
@@ -363,6 +494,90 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("FresiaFlow.Domain.Invoices.IssuedInvoice", b =>
+                {
+                    b.OwnsOne("FresiaFlow.Domain.Shared.Money", "TaxAmount", b1 =>
+                        {
+                            b1.Property<Guid>("IssuedInvoiceId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("TaxAmountCurrency");
+
+                            b1.Property<decimal>("Value")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("TaxAmount");
+
+                            b1.HasKey("IssuedInvoiceId");
+
+                            b1.ToTable("IssuedInvoices");
+
+                            b1.WithOwner()
+                                .HasForeignKey("IssuedInvoiceId");
+                        });
+
+                    b.OwnsOne("FresiaFlow.Domain.Shared.Money", "TaxableBase", b1 =>
+                        {
+                            b1.Property<Guid>("IssuedInvoiceId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("TaxableBaseCurrency");
+
+                            b1.Property<decimal>("Value")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("TaxableBase");
+
+                            b1.HasKey("IssuedInvoiceId");
+
+                            b1.ToTable("IssuedInvoices");
+
+                            b1.WithOwner()
+                                .HasForeignKey("IssuedInvoiceId");
+                        });
+
+                    b.OwnsOne("FresiaFlow.Domain.Shared.Money", "TotalAmount", b1 =>
+                        {
+                            b1.Property<Guid>("IssuedInvoiceId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("TotalAmountCurrency");
+
+                            b1.Property<decimal>("Value")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("TotalAmount");
+
+                            b1.HasKey("IssuedInvoiceId");
+
+                            b1.ToTable("IssuedInvoices");
+
+                            b1.WithOwner()
+                                .HasForeignKey("IssuedInvoiceId");
+                        });
+
+                    b.Navigation("TaxAmount")
+                        .IsRequired();
+
+                    b.Navigation("TaxableBase")
+                        .IsRequired();
+
+                    b.Navigation("TotalAmount")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("FresiaFlow.Domain.InvoicesReceived.InvoiceReceived", b =>
                 {
                     b.OwnsOne("FresiaFlow.Domain.Shared.Money", "SubtotalAmount", b1 =>
@@ -437,7 +652,8 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                                 .HasForeignKey("InvoiceReceivedId");
                         });
 
-                    b.Navigation("SubtotalAmount");
+                    b.Navigation("SubtotalAmount")
+                        .IsRequired();
 
                     b.Navigation("TaxAmount");
 
@@ -510,6 +726,50 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("FresiaFlow.Domain.InvoicesReceived.InvoiceReceivedPayment", b =>
+                {
+                    b.HasOne("FresiaFlow.Domain.InvoicesReceived.InvoiceReceived", null)
+                        .WithMany("Payments")
+                        .HasForeignKey("InvoiceReceivedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FresiaFlow.Domain.InvoicesReceived.InvoiceReceived", "InvoiceReceived")
+                        .WithMany()
+                        .HasForeignKey("InvoiceReceivedId1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("FresiaFlow.Domain.Shared.Money", "Amount", b1 =>
+                        {
+                            b1.Property<Guid>("InvoiceReceivedPaymentId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("Currency");
+
+                            b1.Property<decimal>("Value")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("Amount");
+
+                            b1.HasKey("InvoiceReceivedPaymentId");
+
+                            b1.ToTable("InvoiceReceivedPayments");
+
+                            b1.WithOwner()
+                                .HasForeignKey("InvoiceReceivedPaymentId");
+                        });
+
+                    b.Navigation("Amount")
+                        .IsRequired();
+
+                    b.Navigation("InvoiceReceived");
+                });
+
             modelBuilder.Entity("FresiaFlow.Domain.Banking.BankAccount", b =>
                 {
                     b.Navigation("Transactions");
@@ -518,6 +778,8 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
             modelBuilder.Entity("FresiaFlow.Domain.InvoicesReceived.InvoiceReceived", b =>
                 {
                     b.Navigation("Lines");
+
+                    b.Navigation("Payments");
                 });
 #pragma warning restore 612, 618
         }

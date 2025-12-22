@@ -1,0 +1,277 @@
+.alerts-widget {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.widget-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.widget-title .pi {
+  color: #dc2626;
+}
+
+.alert-count {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.alert-count.has-critical {
+  background: #dc2626;
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #6b7280;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.loading-state .pi-spinner {
+  font-size: 2rem;
+  color: #dc2626;
+}
+
+.error-state {
+  color: #dc2626;
+}
+
+.error-state .pi {
+  font-size: 2rem;
+}
+
+.empty-state .pi {
+  font-size: 3rem;
+  color: #10b981;
+  margin-bottom: 0.5rem;
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.alert-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border-left: 4px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.alert-item:hover {
+  background: #f3f4f6;
+  transform: translateX(4px);
+}
+
+.alert-item.resolved {
+  opacity: 0.6;
+}
+
+.alert-item.severity-critical {
+  border-left-color: #dc2626;
+  background: #fef2f2;
+}
+
+.alert-item.severity-high {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.alert-item.severity-medium {
+  border-left-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.alert-item.severity-low {
+  border-left-color: #10b981;
+  background: #f0fdf4;
+}
+
+.alert-item.severity-info {
+  border-left-color: #6b7280;
+  background: #f9fafb;
+}
+
+.alert-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  color: #dc2626;
+}
+
+.alert-icon .pi {
+  font-size: 1.25rem;
+}
+
+.alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.alert-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  flex: 1;
+  min-width: 200px;
+}
+
+.alert-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.alert-severity {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.alert-severity.severity-critical {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.alert-severity.severity-high {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.alert-severity.severity-medium {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.alert-severity.severity-low {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.alert-severity.severity-info {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.alert-type-badge {
+  background: #e5e7eb;
+  color: #6b7280;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.alert-description {
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.alert-footer {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.alert-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.alert-time .pi {
+  font-size: 0.875rem;
+}
+
+.alert-resolved,
+.alert-acknowledged {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.alert-resolved {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.alert-acknowledged {
+  background: #dbeafe;
+  color: #2563eb;
+}
+

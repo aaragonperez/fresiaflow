@@ -30,6 +30,15 @@ public interface IOpenAIClient
         string text,
         string schemaDescription,
         CancellationToken cancellationToken = default) where T : class;
+
+    /// <summary>
+    /// Extrae información estructurada de un archivo PDF usando IA con visión.
+    /// El PDF se convierte a imagen y se procesa con modelos de visión como gpt-4o.
+    /// </summary>
+    Task<T> ExtractStructuredDataFromPdfAsync<T>(
+        string pdfFilePath,
+        string schemaDescription,
+        CancellationToken cancellationToken = default) where T : class;
 }
 
 /// <summary>

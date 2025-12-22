@@ -1,0 +1,137 @@
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-content {
+  flex: 1;
+}
+
+.page-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-color, #1f2937);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.page-header h1 .pi {
+  color: var(--primary-color, #dc2626);
+  font-size: 1.75rem;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-color, #6b7280);
+  opacity: 0.7;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background: var(--card-bg, white);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--secondary-color, #e5e7eb);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-color: var(--primary-color, #dc2626);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--secondary-color, #fee2e2);
+}
+
+.stat-icon .pi {
+  font-size: 1.5rem;
+  color: var(--primary-color, #dc2626);
+}
+
+.stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--text-color, #6b7280);
+  opacity: 0.7;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-color, #1f2937);
+}
+
+.widgets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.widget-container {
+  min-height: 400px;
+}
+
+.widget-full-width {
+  grid-column: 1 / -1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .widgets-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .widget-full-width {
+    grid-column: 1;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    flex-direction: column;
+  }
+}

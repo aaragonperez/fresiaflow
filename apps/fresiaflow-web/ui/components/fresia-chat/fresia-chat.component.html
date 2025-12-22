@@ -1,0 +1,95 @@
+<!-- Botón flotante para abrir el chat -->
+@if (!isOpen()) {
+  <button class="chat-toggle-btn" (click)="toggleChat()" title="Abrir chat FresiaFlow">
+    <i class="pi pi-comments"></i>
+  </button>
+}
+
+<!-- Ventana de chat flotante -->
+@if (isOpen()) {
+  <div class="chat-window">
+    <div class="chat-header">
+      <div class="chat-header-content">
+        <i class="pi pi-comments"></i>
+        <h3>FresiaFlow Chat</h3>
+        @if (messages().length > 0) {
+          <span class="agent-badge" *ngIf="messages()[messages().length - 1]?.agent">
+            {{ messages()[messages().length - 1].agent }}
+          </span>
+        }
+      </div>
+      <div class="chat-header-actions">
+        @if (messages().length > 0) {
+          <button class="btn-icon" (click)="clearHistory()" title="Limpiar historial">
+            <i class="pi pi-trash"></i>
+          </button>
+        }
+        <button class="btn-icon" (click)="toggleChat()" title="Cerrar chat">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="chat-messages" #messagesContainer>
+      @if (messages().length === 0) {
+        <div class="chat-welcome">
+          <i class="pi pi-comments"></i>
+          <h4>Bienvenido a FresiaFlow</h4>
+          <p>Pregúntame sobre facturas, tareas, arquitectura, integraciones o cualquier tema relacionado con el proyecto.</p>
+          <div class="chat-examples">
+            <p><strong>Ejemplos:</strong></p>
+            <ul>
+              <li>"¿Cuánto IVA he pagado este trimestre?"</li>
+              <li>"Revisa la arquitectura de este componente"</li>
+              <li>"¿Cómo integrar con el banco?"</li>
+            </ul>
+          </div>
+        </div>
+      }
+      
+      @for (message of messages(); track $index) {
+        <div class="message" [class.user-message]="message.role === 'user'" [class.assistant-message]="message.role === 'assistant'">
+          <div class="message-content">
+            @if (message.role === 'assistant' && message.agent) {
+              <div class="agent-label">[{{ message.agent }}]</div>
+            }
+            <div class="message-text">{{ message.content }}</div>
+            <div class="message-time">{{ message.timestamp | date:'HH:mm' }}</div>
+          </div>
+        </div>
+      }
+      
+      @if (isLoading()) {
+        <div class="message assistant-message">
+          <div class="message-content">
+            <div class="message-text typing-indicator">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="chat-input-container">
+      <input
+        #messageInput
+        type="text"
+        class="chat-input"
+        [ngModel]="currentMessage()"
+        (ngModelChange)="currentMessage.set($event)"
+        (keydown)="onKeyPress($event)"
+        placeholder="Escribe tu mensaje..."
+        [disabled]="isLoading()"
+      />
+      <button
+        class="chat-send-btn"
+        (click)="sendMessage()"
+        [disabled]="isLoading() || !currentMessage().trim()"
+        title="Enviar mensaje"
+      >
+        <i class="pi pi-send"></i>
+      </button>
+    </div>
+  </div>
+}
+

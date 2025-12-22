@@ -1,15 +1,16 @@
-using FresiaFlow.Domain.Invoices;
+using FresiaFlow.Domain.InvoicesReceived;
 
 namespace FresiaFlow.Application.Ports.Inbound;
 
 /// <summary>
-/// Puerto de entrada (Inbound Port) para obtener todas las facturas.
+/// Puerto de entrada (Inbound Port) para obtener todas las facturas recibidas.
+/// Devuelve InvoiceReceived con todos los datos fiscales y de detalle.
 /// </summary>
 public interface IGetAllInvoicesUseCase
 {
     /// <summary>
-    /// Obtiene todas las facturas ordenadas por fecha de emisión descendente.
+    /// Obtiene todas las facturas recibidas ordenadas por fecha de procesamiento descendente.
     /// </summary>
-    Task<List<Invoice>> ExecuteAsync(CancellationToken cancellationToken = default);
+    Task<List<InvoiceReceived>> ExecuteAsync(CancellationToken cancellationToken = default);
 }
 

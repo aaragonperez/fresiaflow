@@ -55,17 +55,9 @@ public class InvoiceReceivedController : ControllerBase
         return Ok(MapToDto(invoice));
     }
 
-    /// <summary>
-    /// Obtiene facturas por estado.
-    /// </summary>
-    [HttpGet("by-status/{status}")]
-    public async Task<IActionResult> GetByStatus(
-        InvoiceReceivedStatus status,
-        CancellationToken cancellationToken)
-    {
-        var invoices = await _repository.GetByStatusAsync(status, cancellationToken);
-        return Ok(invoices.Select(MapToDto));
-    }
+    // NOTA: El endpoint GetByStatus ya no tiene sentido en el modelo contable.
+    // Las facturas recibidas están contabilizadas desde su recepción, no hay estados.
+    // Se eliminó este endpoint. Usar filtros contables en su lugar (año, trimestre, proveedor, tipo de pago).
 
     /// <summary>
     /// Busca una factura por número.
@@ -120,14 +112,22 @@ public class InvoiceReceivedController : ControllerBase
 
     /// <summary>
     /// Marca una factura como revisada.
+    /// NOTA: En el modelo contable, las facturas están contabilizadas desde su recepción.
+    /// Este endpoint se mantiene para compatibilidad pero no realiza cambios.
     /// </summary>
     [HttpPost("{id:guid}/mark-reviewed")]
     public async Task<IActionResult> MarkAsReviewed(Guid id, CancellationToken cancellationToken)
     {
         try
         {
+            // Verificar que la factura existe
+            var invoice = await _repository.GetByIdAsync(id, cancellationToken);
+            if (invoice == null)
+                return NotFound(new { message = $"Factura con ID {id} no encontrada." });
+
+            // No hay nada que hacer - la factura ya está contabilizada
             await _markAsReviewedUseCase.ExecuteAsync(id, cancellationToken);
-            return Ok(new { message = "Factura marcada como revisada" });
+            return Ok(new { message = "La factura ya está contabilizada (modelo contable)" });
         }
         catch (InvalidOperationException ex)
         {
@@ -135,7 +135,7 @@ public class InvoiceReceivedController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error marcando factura {InvoiceId} como revisada", id);
+            _logger.LogError(ex, "Error en mark-reviewed para factura {InvoiceId}", id);
             return StatusCode(500, new { message = "Error procesando la solicitud", error = ex.Message });
         }
     }
@@ -146,18 +146,29 @@ public class InvoiceReceivedController : ControllerBase
         {
             id = invoice.Id,
             invoiceNumber = invoice.InvoiceNumber,
+            issueDate = invoice.IssueDate,
+            receivedDate = invoice.ReceivedDate,
             supplierName = invoice.SupplierName,
             supplierTaxId = invoice.SupplierTaxId,
-            issueDate = invoice.IssueDate,
-            dueDate = invoice.DueDate,
-            totalAmount = invoice.TotalAmount.Value,
+            supplierAddress = invoice.SupplierAddress,
+            subtotalAmount = invoice.SubtotalAmount.Value,
             taxAmount = invoice.TaxAmount?.Value,
-            subtotalAmount = invoice.SubtotalAmount?.Value,
+            taxRate = invoice.TaxRate,
+            totalAmount = invoice.TotalAmount.Value,
             currency = invoice.Currency,
+            paymentType = invoice.PaymentType.ToString(),
+            payments = invoice.Payments.Select(p => new
+            {
+                id = p.Id,
+                bankTransactionId = p.BankTransactionId,
+                amount = p.Amount.Value,
+                currency = p.Amount.Currency,
+                paymentDate = p.PaymentDate
+            }).ToList(),
+            origin = invoice.Origin.ToString(),
             originalFilePath = invoice.OriginalFilePath,
             processedFilePath = invoice.ProcessedFilePath,
-            processedAt = invoice.ProcessedAt,
-            status = invoice.Status.ToString(),
+            extractionConfidence = invoice.ExtractionConfidence,
             notes = invoice.Notes,
             linesCount = invoice.Lines.Count,
             lines = invoice.Lines.Select(line => new
@@ -167,9 +178,13 @@ public class InvoiceReceivedController : ControllerBase
                 description = line.Description,
                 quantity = line.Quantity,
                 unitPrice = line.UnitPrice.Value,
+                unitPriceCurrency = line.UnitPrice.Currency,
                 taxRate = line.TaxRate,
-                lineTotal = line.LineTotal.Value
-            })
+                lineTotal = line.LineTotal.Value,
+                lineTotalCurrency = line.LineTotal.Currency
+            }).ToList(),
+            createdAt = invoice.CreatedAt,
+            updatedAt = invoice.UpdatedAt
         };
     }
 }

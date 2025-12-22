@@ -142,3 +142,207 @@ input, textarea, select {
   font-size: 14px;
 }
 
+/* ----------------------- */
+/* Overrides para temas    */
+/* ----------------------- */
+:root {
+  /* Valores por defecto; los sobreescribe ThemeService */
+  --primary-color: #dc2626;
+  --primary-color-strong: #b91c1c;
+  --secondary-color: #fca5a5;
+  --accent-color: #fee2e2;
+  --background-color: #f9fafb;
+  --text-color: #1f2937;
+  --sidebar-bg: #ffffff;
+  --card-bg: #ffffff;
+}
+
+body {
+  color: var(--text-color);
+  background: var(--background-color);
+}
+
+.p-button {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.p-button:hover {
+  background: var(--primary-color-strong, var(--primary-color));
+  border-color: var(--primary-color-strong, var(--primary-color));
+}
+
+.p-sidebar {
+  background: linear-gradient(180deg, var(--card-bg) 0%, var(--background-color) 100%);
+}
+
+.p-menubar {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-strong, var(--primary-color)) 100%);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color) 50%, transparent);
+}
+
+.p-menu .p-menuitem-link {
+  color: var(--text-color);
+}
+
+.p-menu .p-menuitem-link:hover {
+  background: var(--secondary-color);
+  color: var(--primary-color-strong, var(--primary-color));
+}
+
+.p-menu .p-menuitem-link:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.p-menu .p-menuitem-icon {
+  color: var(--primary-color);
+}
+
+.p-menu .p-submenu-header {
+  color: var(--text-color);
+}
+
+a {
+  color: var(--primary-color);
+}
+
+button {
+  background-color: var(--primary-color);
+}
+
+button:hover {
+  background-color: var(--primary-color-strong, var(--primary-color));
+}
+
+/* Paginador global con tema */
+.p-paginator {
+  background: var(--card-bg, white);
+  border-color: var(--secondary-color, #e5e7eb);
+}
+
+.p-paginator .p-paginator-element {
+  color: var(--text-color, #374151);
+  background: var(--card-bg, white);
+  border-color: var(--secondary-color, #e5e7eb);
+}
+
+.p-paginator .p-paginator-element:hover {
+  background: var(--secondary-color, #f3f4f6);
+  color: var(--primary-color, #dc2626);
+}
+
+.p-paginator .p-paginator-element.p-highlight {
+  background: var(--primary-color, #dc2626);
+  border-color: var(--primary-color, #dc2626);
+  color: white;
+}
+
+.p-paginator .p-dropdown {
+  background: var(--card-bg, white);
+  border-color: var(--secondary-color, #e5e7eb);
+}
+
+/* Tablas PrimeNG con tema */
+.p-datatable .p-datatable-thead > tr > th {
+  background: var(--background-color, #f9fafb);
+  color: var(--text-color, #374151);
+  border-color: var(--secondary-color, #e5e7eb);
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  background: var(--card-bg, white);
+  color: var(--text-color, #1f2937);
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+  background: var(--secondary-color, #f9fafb);
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  border-color: var(--secondary-color, #e5e7eb);
+}
+
+/* Dropdowns con tema */
+.p-dropdown {
+  background: var(--card-bg, white);
+  border-color: var(--secondary-color, #d1d5db);
+  color: var(--text-color, #1f2937);
+}
+
+.p-dropdown:hover {
+  border-color: var(--primary-color, #dc2626);
+}
+
+.p-dropdown-panel {
+  background: var(--card-bg, white);
+  border-color: var(--secondary-color, #e5e7eb);
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+  color: var(--text-color, #1f2937);
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item:hover {
+  background: var(--secondary-color, #f3f4f6);
+}
+
+.p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight {
+  background: var(--primary-color, #dc2626);
+  color: white;
+}
+
+/* Inputs con tema */
+.p-inputtext {
+  background: var(--card-bg, white);
+  border-color: var(--secondary-color, #d1d5db);
+  color: var(--text-color, #1f2937);
+}
+
+.p-inputtext:focus {
+  border-color: var(--primary-color, #dc2626);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color, #dc2626) 15%, transparent);
+}
+
+/* Diálogos con tema */
+.p-dialog {
+  background: var(--card-bg, white);
+}
+
+.p-dialog .p-dialog-header {
+  background: var(--card-bg, white);
+  color: var(--text-color, #1f2937);
+  border-color: var(--secondary-color, #e5e7eb);
+}
+
+.p-dialog .p-dialog-content {
+  background: var(--card-bg, white);
+  color: var(--text-color, #1f2937);
+}
+
+/* Tooltips con tema */
+.p-tooltip .p-tooltip-text {
+  background: var(--text-color, #1f2937);
+  color: var(--card-bg, white);
+}
+
+/* Cards y paneles con tema */
+.p-card {
+  background: var(--card-bg, white);
+  color: var(--text-color, #1f2937);
+}
+
+.p-panel {
+  background: var(--card-bg, white);
+}
+
+.p-panel .p-panel-header {
+  background: var(--background-color, #f9fafb);
+  color: var(--text-color, #1f2937);
+  border-color: var(--secondary-color, #e5e7eb);
+}
+
+.p-panel .p-panel-content {
+  background: var(--card-bg, white);
+  color: var(--text-color, #1f2937);
+}
+

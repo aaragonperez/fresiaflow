@@ -1,4 +1,4 @@
-import { Component, OnInit, PLATFORM_ID, Inject } from '@angular/core';
+import { Component, OnInit, PLATFORM_ID, Inject, ViewChild } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
 import { RouterModule, RouterOutlet } from '@angular/router';
 import { SidebarModule } from 'primeng/sidebar';
@@ -6,6 +6,9 @@ import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
 import { BadgeModule } from 'primeng/badge';
 import { MenuItem } from 'primeng/api';
+import { HelpDialogComponent } from '../../ui/components/help-dialog/help-dialog.component';
+import { ThemeSelectorComponent } from '../../ui/components/theme-selector/theme-selector.component';
+import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat.component';
 
 @Component({
   selector: 'app-main-layout',
@@ -17,16 +20,16 @@ import { MenuItem } from 'primeng/api';
     SidebarModule,
     ButtonModule,
     MenuModule,
-    BadgeModule
+    BadgeModule,
+    HelpDialogComponent,
+    ThemeSelectorComponent,
+    FresiaChatComponent
   ],
   template: `
     <div class="layout-wrapper">
       <!-- Sidebar Menu -->
       <div class="sidebar-container" [class.collapsed]="!sidebarVisible">
-        <!-- Logo -->
-        <div class="sidebar-logo">
-          <img src="/assets/fresiaflow-logo.png" alt="FresiaFlow" class="logo-image" />
-        </div>
+        <!-- Logo removido -->
 
         <!-- Toggle Button -->
         <button 
@@ -57,8 +60,12 @@ import { MenuItem } from 'primeng/api';
 
         <!-- Footer -->
         <div class="sidebar-footer" *ngIf="sidebarVisible">
-          <button pButton label="Ayuda" icon="pi pi-question-circle" class="p-button-text p-button-sm"></button>
+          <app-theme-selector></app-theme-selector>
+          <button pButton label="Ayuda" icon="pi pi-question-circle" class="p-button-text p-button-sm" (click)="showHelp()"></button>
         </div>
+        
+        <!-- Help Dialog -->
+        <app-help-dialog #helpDialog></app-help-dialog>
       </div>
 
       <!-- Main Content -->
@@ -67,6 +74,9 @@ import { MenuItem } from 'primeng/api';
           <router-outlet></router-outlet>
         </div>
       </div>
+
+      <!-- Chat FresiaFlow Global -->
+      <app-fresia-chat></app-fresia-chat>
     </div>
   `,
   styles: [`
@@ -74,7 +84,7 @@ import { MenuItem } from 'primeng/api';
       display: flex;
       height: 100vh;
       overflow: hidden;
-      background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+      background: linear-gradient(135deg, var(--background-color, #fafafa) 0%, var(--secondary-color, #f5f5f5) 100%);
     }
 
     .sidebar-container {
@@ -83,8 +93,8 @@ import { MenuItem } from 'primeng/api';
       top: 0;
       bottom: 0;
       width: 280px;
-      background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
-      border-right: 1px solid #e5e7eb;
+      background: linear-gradient(180deg, var(--card-bg, #ffffff) 0%, var(--background-color, #fafafa) 100%);
+      border-right: 1px solid var(--secondary-color, #e5e7eb);
       display: flex;
       flex-direction: column;
       transition: all 0.3s ease;
@@ -96,37 +106,14 @@ import { MenuItem } from 'primeng/api';
       width: 70px;
     }
 
-    .sidebar-logo {
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-bottom: 2px solid #fee2e2;
-      background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
-      position: relative;
-      min-height: 120px;
-    }
-
-    .logo-image {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      transition: all 0.3s ease;
-    }
-
-    .sidebar-container.collapsed .logo-image {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
 
     .toggle-btn {
       position: absolute;
       right: -15px;
-      top: 80px;
+      top: 50px;
       z-index: 1001;
-      background: white !important;
-      border: 2px solid #dc2626 !important;
+      background: var(--card-bg, white) !important;
+      border: 2px solid var(--primary-color, #dc2626) !important;
       border-radius: 50% !important;
       width: 30px !important;
       height: 30px !important;
@@ -134,13 +121,13 @@ import { MenuItem } from 'primeng/api';
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      color: #dc2626 !important;
-      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2) !important;
+      color: var(--primary-color, #dc2626) !important;
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color, #dc2626) 20%, transparent) !important;
       transition: all 0.3s ease;
     }
 
     .toggle-btn:hover {
-      background: #dc2626 !important;
+      background: var(--primary-color, #dc2626) !important;
       color: white !important;
       transform: scale(1.1);
     }
@@ -150,7 +137,7 @@ import { MenuItem } from 'primeng/api';
       align-items: center;
       gap: 12px;
       padding: 1.5rem;
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+      background: linear-gradient(135deg, var(--primary-color, #dc2626) 0%, var(--primary-color, #b91c1c) 100%);
       color: white;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
@@ -218,12 +205,13 @@ import { MenuItem } from 'primeng/api';
     }
 
     .sidebar-content::-webkit-scrollbar-thumb {
-      background: #e5e7eb;
+      background: var(--secondary-color, #e5e7eb);
       border-radius: 3px;
     }
 
     .sidebar-content::-webkit-scrollbar-thumb:hover {
-      background: #d1d5db;
+      background: var(--text-color, #d1d5db);
+      opacity: 0.5;
     }
 
     ::ng-deep .sidebar-container .p-menu {
@@ -235,7 +223,7 @@ import { MenuItem } from 'primeng/api';
       margin: 4px 8px;
       padding: 12px 16px;
       transition: all 0.3s ease;
-      color: #1f2937;
+      color: var(--text-color, #1f2937);
     }
 
     ::ng-deep .sidebar-container.collapsed .p-menuitem-link {
@@ -249,8 +237,8 @@ import { MenuItem } from 'primeng/api';
     }
 
     ::ng-deep .sidebar-container .p-menuitem-link:hover {
-      background: #fee2e2;
-      color: #b91c1c;
+      background: var(--secondary-color, #fee2e2);
+      color: var(--primary-color, #b91c1c);
       transform: translateX(4px);
     }
 
@@ -259,7 +247,7 @@ import { MenuItem } from 'primeng/api';
     }
 
     ::ng-deep .sidebar-container .p-menuitem-icon {
-      color: #dc2626;
+      color: var(--primary-color, #dc2626);
       margin-right: 12px;
       font-size: 1.1rem;
     }
@@ -271,7 +259,8 @@ import { MenuItem } from 'primeng/api';
 
     ::ng-deep .sidebar-container .p-submenu-header {
       font-weight: 600;
-      color: #6b7280;
+      color: var(--text-color, #6b7280);
+      opacity: 0.7;
       padding: 12px 16px;
       font-size: 0.7rem;
       text-transform: uppercase;
@@ -285,15 +274,18 @@ import { MenuItem } from 'primeng/api';
 
     .sidebar-footer {
       padding: 16px;
-      border-top: 1px solid #e5e7eb;
-      background: #fafafa;
+      border-top: 1px solid var(--secondary-color, #e5e7eb);
+      background: var(--background-color, #fafafa);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .main-content {
       flex: 1;
       margin-left: 280px;
       overflow-y: auto;
-      background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+      background: linear-gradient(135deg, var(--background-color, #f9fafb) 0%, var(--secondary-color, #f3f4f6) 100%);
       transition: margin-left 0.3s ease;
       min-height: 100vh;
     }
@@ -335,6 +327,7 @@ import { MenuItem } from 'primeng/api';
 })
 export class MainLayoutComponent implements OnInit {
   sidebarVisible = true;
+  @ViewChild('helpDialog') helpDialog!: HelpDialogComponent;
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
 
@@ -348,6 +341,12 @@ export class MainLayoutComponent implements OnInit {
     this.sidebarVisible = !this.sidebarVisible;
   }
 
+  showHelp() {
+    if (this.helpDialog) {
+      this.helpDialog.show();
+    }
+  }
+
   menuItems: MenuItem[] = [
     {
       label: 'NAVEGACIÓN',
@@ -355,7 +354,7 @@ export class MainLayoutComponent implements OnInit {
         {
           label: 'Dashboard',
           icon: 'pi pi-home',
-          routerLink: '/tasks'
+          routerLink: '/dashboard'
         }
       ]
     },
@@ -395,7 +394,7 @@ export class MainLayoutComponent implements OnInit {
     {
       label: 'Dashboard',
       icon: 'pi pi-home',
-      routerLink: '/tasks',
+      routerLink: '/dashboard',
       title: 'Dashboard'
     },
     {

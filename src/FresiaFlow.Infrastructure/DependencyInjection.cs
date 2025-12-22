@@ -9,6 +9,7 @@ using FresiaFlow.Adapters.Outbound.Banking;
 using FresiaFlow.Adapters.Outbound.Storage;
 using FresiaFlow.Adapters.Outbound.Rag;
 using FresiaFlow.Adapters.Outbound.Pdf;
+using FresiaFlow.Adapters.Outbound.Excel;
 using FresiaFlow.Infrastructure.HostedServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -32,6 +33,7 @@ public static class DependencyInjection
 
         // Repositories (Outbound Ports -> Adapters)
         services.AddScoped<IInvoiceRepository, EfInvoiceRepository>();
+        services.AddScoped<IIssuedInvoiceRepository, EfIssuedInvoiceRepository>();
         services.AddScoped<IBankTransactionRepository, EfBankTransactionRepository>();
         services.AddScoped<IBankAccountRepository, EfBankAccountRepository>();
         services.AddScoped<ITaskRepository, EfTaskRepository>();
@@ -84,7 +86,12 @@ public static class DependencyInjection
 
         // Use Cases (Inbound Ports -> Implementations)
         services.AddScoped<IUploadInvoiceUseCase, UploadInvoiceUseCase>();
+        services.AddScoped<IImportIssuedInvoicesFromExcelUseCase, ImportIssuedInvoicesFromExcelUseCase>();
+        services.AddScoped<IExportIssuedInvoicesUseCase, ExportIssuedInvoicesUseCase>();
         services.AddScoped<IGetAllInvoicesUseCase, GetAllInvoicesUseCase>();
+        services.AddScoped<IDeleteInvoiceUseCase, DeleteInvoiceUseCase>();
+        services.AddScoped<IUpdateInvoiceSupplierUseCase, UpdateInvoiceSupplierUseCase>();
+        services.AddScoped<IUpdateInvoiceUseCase, UpdateInvoiceUseCase>();
         services.AddScoped<ISyncBankTransactionsUseCase, SyncBankTransactionsUseCase>();
         services.AddScoped<IProposeDailyPlanUseCase, ProposeDailyPlanUseCase>();
         services.AddScoped<IMarkInvoiceAsReviewedUseCase, MarkInvoiceAsReviewedUseCase>();
@@ -95,9 +102,16 @@ public static class DependencyInjection
         services.AddScoped<IPdfTextExtractorService, PdfTextExtractorService>();
         services.AddScoped<IInvoiceExtractionService, InvoiceExtractionService>();
 
+        // Procesamiento de Excel
+        services.AddScoped<IExcelProcessor, ExcelProcessorService>();
+        services.AddScoped<IExcelExporter, ExcelExporterService>();
+
         // AI Orchestrator
         services.AddScoped<ToolRegistry>();
         services.AddScoped<IFresiaFlowOrchestrator, FresiaFlowOrchestrator>();
+        
+        // FresiaFlow Router
+        services.AddScoped<IFresiaFlowRouter, FresiaFlowRouter>();
 
         // Configuración de opciones
         services.Configure<IncomingInvoiceOptions>(

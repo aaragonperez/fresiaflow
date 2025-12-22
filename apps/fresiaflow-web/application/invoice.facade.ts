@@ -1,67 +1,97 @@
-import { Injectable, signal, computed, Inject } from '@angular/core';
-import { Invoice, InvoiceStatus } from '../domain/invoice.model';
-import { InvoiceApiPort } from '../ports/invoice.api.port';
+import { Injectable, Inject, signal, computed } from '@angular/core';
+import { InvoiceApiPort, InvoiceFilter } from '../ports/invoice.api.port';
+import { Invoice, PaymentType } from '../domain/invoice.model';
 import { INVOICE_API_PORT } from '../infrastructure/api/providers';
 
 /**
- * Facade para gestión de facturas.
- * Gestiona el estado usando signals.
+ * Facade para gestión de facturas recibidas.
+ * Refleja el modelo contable: todas las facturas están contabilizadas desde su recepción.
  */
 @Injectable({ providedIn: 'root' })
 export class InvoiceFacade {
-  private _invoices = signal<Invoice[]>([]);
-  private _loading = signal<boolean>(false);
-  private _error = signal<string | null>(null);
+  // Estado interno
+  private readonly _invoices = signal<Invoice[]>([]);
+  private readonly _loading = signal<boolean>(false);
+  private readonly _error = signal<string | null>(null);
+  private readonly _currentFilter = signal<InvoiceFilter | undefined>(undefined);
 
+  // Estado público (readonly)
   readonly invoices = this._invoices.asReadonly();
   readonly loading = this._loading.asReadonly();
   readonly error = this._error.asReadonly();
+  readonly currentFilter = this._currentFilter.asReadonly();
 
-  readonly pendingInvoices = computed(() =>
-    this._invoices().filter(i => i.status === InvoiceStatus.Pending)
+  // Vistas computadas según tipo de pago
+  readonly bankInvoices = computed(() =>
+    this._invoices().filter(i => i.paymentType === PaymentType.Bank)
   );
 
-  readonly overdueInvoices = computed(() =>
-    this._invoices().filter(i => i.status === InvoiceStatus.Overdue)
+  readonly cashInvoices = computed(() =>
+    this._invoices().filter(i => i.paymentType === PaymentType.Cash)
   );
 
-  readonly paidInvoices = computed(() =>
-    this._invoices().filter(i => i.status === InvoiceStatus.Paid)
+  // Facturas con baja confianza de extracción (requieren verificación)
+  readonly lowConfidenceInvoices = computed(() =>
+    this._invoices().filter(i => 
+      i.extractionConfidence !== undefined && i.extractionConfidence < 0.7
+    )
   );
+
+  // Estadísticas
+  readonly totalAmount = computed(() =>
+    this._invoices().reduce((sum, inv) => sum + inv.totalAmount, 0)
+  );
+
+  readonly totalTaxAmount = computed(() =>
+    this._invoices().reduce((sum, inv) => sum + (inv.taxAmount || 0), 0)
+  );
+
+  readonly totalSubtotalAmount = computed(() =>
+    this._invoices().reduce((sum, inv) => sum + inv.subtotalAmount, 0)
+  );
+
+  readonly invoicesCount = computed(() => this._invoices().length);
+
+  // Mantener compatibilidad con nombres antiguos (deprecated)
+  readonly pendingInvoices = computed(() => []); // No aplica en modelo contable
+  readonly reviewedInvoices = computed(() => []); // No aplica en modelo contable
+  readonly errorInvoices = computed(() => this.lowConfidenceInvoices()); // Facturas con baja confianza
+  readonly overdueInvoices = computed(() => []); // No aplica para InvoiceReceived
+  readonly paidInvoices = computed(() => []); // No aplica para InvoiceReceived
 
   constructor(@Inject(INVOICE_API_PORT) private invoiceApi: InvoiceApiPort) {}
 
-  async loadInvoices(): Promise<void> {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.facade.ts:34',message:'loadInvoices entry',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
+  /**
+   * Carga todas las facturas con filtros opcionales.
+   */
+  async loadInvoices(filter?: InvoiceFilter): Promise<void> {
     this._loading.set(true);
     this._error.set(null);
+    this._currentFilter.set(filter);
 
     try {
-      const invoices = await this.invoiceApi.getAllInvoices();
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.facade.ts:40',message:'loadInvoices success',data:{count:invoices.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
+      const invoices = await this.invoiceApi.getAllInvoices(filter);
       this._invoices.set(invoices);
     } catch (error: unknown) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.facade.ts:44',message:'loadInvoices error',data:{error:error instanceof Error ? error.message : String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       this._error.set(error instanceof Error ? error.message : 'Error al cargar facturas');
     } finally {
       this._loading.set(false);
     }
   }
 
+  /**
+   * Sube una nueva factura.
+   */
   async uploadInvoice(file: File): Promise<Invoice> {
     this._loading.set(true);
     this._error.set(null);
 
     try {
-      const result = await this.invoiceApi.uploadInvoice(file);
-      this._invoices.update(invoices => [...invoices, result]);
-      return result;
+      const invoice = await this.invoiceApi.uploadInvoice(file);
+      // Agregar a la lista actual (respetando filtros)
+      const currentInvoices = this._invoices();
+      this._invoices.set([invoice, ...currentInvoices]);
+      return invoice;
     } catch (error: unknown) {
       this._error.set(error instanceof Error ? error.message : 'Error al subir factura');
       throw error;
@@ -70,22 +100,108 @@ export class InvoiceFacade {
     }
   }
 
-  async markAsPaid(invoiceId: string, transactionId: string): Promise<void> {
+  /**
+   * Actualiza una factura existente.
+   */
+  async updateInvoice(id: string, data: Partial<Invoice>): Promise<Invoice> {
     this._loading.set(true);
     this._error.set(null);
 
     try {
-      await this.invoiceApi.markAsPaid(invoiceId, transactionId);
-      this._invoices.update(invoices =>
-        invoices.map(i => i.id === invoiceId
-          ? { ...i, status: InvoiceStatus.Paid, reconciledWithTransactionId: transactionId }
-          : i)
-      );
+      const updateRequest: any = {};
+      if (data.invoiceNumber) updateRequest.invoiceNumber = data.invoiceNumber;
+      if (data.supplierName) updateRequest.supplierName = data.supplierName;
+      if (data.supplierTaxId !== undefined) updateRequest.supplierTaxId = data.supplierTaxId;
+      if (data.issueDate) updateRequest.issueDate = data.issueDate.toISOString();
+      if (data.totalAmount !== undefined) updateRequest.totalAmount = data.totalAmount;
+      if (data.taxAmount !== undefined) updateRequest.taxAmount = data.taxAmount;
+      if (data.subtotalAmount !== undefined) updateRequest.subtotalAmount = data.subtotalAmount;
+      if (data.currency) updateRequest.currency = data.currency;
+      if (data.notes !== undefined) updateRequest.notes = data.notes;
+
+      const updated = await this.invoiceApi.updateInvoice(id, updateRequest);
+      
+      // Actualizar en la lista
+      const currentInvoices = this._invoices();
+      const index = currentInvoices.findIndex(i => i.id === id);
+      if (index >= 0) {
+        currentInvoices[index] = updated;
+        this._invoices.set([...currentInvoices]);
+      }
+      
+      return updated;
     } catch (error: unknown) {
-      this._error.set(error instanceof Error ? error.message : 'Error al marcar como pagada');
+      this._error.set(error instanceof Error ? error.message : 'Error al actualizar factura');
+      throw error;
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  /**
+   * Elimina una factura.
+   */
+  async deleteInvoice(id: string): Promise<void> {
+    this._loading.set(true);
+    this._error.set(null);
+
+    try {
+      await this.invoiceApi.deleteInvoice(id);
+      // Remover de la lista
+      const currentInvoices = this._invoices();
+      this._invoices.set(currentInvoices.filter(i => i.id !== id));
+    } catch (error: unknown) {
+      this._error.set(error instanceof Error ? error.message : 'Error al eliminar factura');
+      throw error;
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  /**
+   * Exporta las facturas actuales (con filtros aplicados) a Excel.
+   */
+  async exportToExcel(): Promise<void> {
+    this._loading.set(true);
+    this._error.set(null);
+
+    try {
+      const filter = this._currentFilter();
+      const blob = await this.invoiceApi.exportToExcel(filter);
+      
+      // Descargar el archivo
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `FacturasRecibidas_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: unknown) {
+      this._error.set(error instanceof Error ? error.message : 'Error al exportar a Excel');
+      throw error;
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  /**
+   * Envía una pregunta sobre las facturas al chat de OpenAI.
+   */
+  async chatAboutInvoices(question: string): Promise<{ answer: string; context?: any }> {
+    this._loading.set(true);
+    this._error.set(null);
+
+    try {
+      const filter = this._currentFilter();
+      const response = await this.invoiceApi.chatAboutInvoices(question, filter);
+      return response;
+    } catch (error: unknown) {
+      this._error.set(error instanceof Error ? error.message : 'Error en el chat');
+      throw error;
     } finally {
       this._loading.set(false);
     }
   }
 }
-

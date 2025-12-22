@@ -1,24 +1,26 @@
 using FresiaFlow.Application.Ports.Inbound;
 using FresiaFlow.Application.Ports.Outbound;
-using FresiaFlow.Domain.Invoices;
+using FresiaFlow.Domain.InvoicesReceived;
 
 namespace FresiaFlow.Application.UseCases;
 
 /// <summary>
-/// Caso de uso para obtener todas las facturas.
+/// Caso de uso para obtener todas las facturas recibidas.
+/// Devuelve InvoiceReceived que contiene todos los datos fiscales y de detalle.
 /// </summary>
 public class GetAllInvoicesUseCase : IGetAllInvoicesUseCase
 {
-    private readonly IInvoiceRepository _invoiceRepository;
+    private readonly IInvoiceReceivedRepository _invoiceReceivedRepository;
 
-    public GetAllInvoicesUseCase(IInvoiceRepository invoiceRepository)
+    public GetAllInvoicesUseCase(IInvoiceReceivedRepository invoiceReceivedRepository)
     {
-        _invoiceRepository = invoiceRepository;
+        _invoiceReceivedRepository = invoiceReceivedRepository;
     }
 
-    public async Task<List<Invoice>> ExecuteAsync(CancellationToken cancellationToken = default)
+    public async Task<List<InvoiceReceived>> ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        return await _invoiceRepository.GetAllAsync(cancellationToken);
+        var invoices = await _invoiceReceivedRepository.GetAllAsync(cancellationToken);
+        return invoices.ToList();
     }
 }
 

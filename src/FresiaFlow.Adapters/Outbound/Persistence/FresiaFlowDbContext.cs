@@ -19,12 +19,14 @@ public class FresiaFlowDbContext : DbContext
     }
 
     public DbSet<Invoice> Invoices { get; set; } = null!;
+    public DbSet<IssuedInvoice> IssuedInvoices { get; set; } = null!;
     public DbSet<BankAccount> BankAccounts { get; set; } = null!;
     public DbSet<BankTransaction> BankTransactions { get; set; } = null!;
     public DbSet<TaskItem> Tasks { get; set; } = null!;
     public DbSet<ReconciliationCandidate> ReconciliationCandidates { get; set; } = null!;
     public DbSet<InvoiceReceived> InvoicesReceived { get; set; } = null!;
     public DbSet<InvoiceReceivedLine> InvoiceReceivedLines { get; set; } = null!;
+    public DbSet<InvoiceReceivedPayment> InvoiceReceivedPayments { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -90,6 +92,42 @@ public class FresiaFlowDbContext : DbContext
             {
                 money.Property(m => m.Value).HasColumnName("Amount").HasPrecision(18, 2);
                 money.Property(m => m.Currency).HasColumnName("Currency").HasMaxLength(3);
+            });
+        });
+
+        // Configuración de IssuedInvoice
+        modelBuilder.Entity<IssuedInvoice>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Series).HasMaxLength(50);
+            entity.Property(e => e.InvoiceNumber).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.ClientName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ClientTaxId).HasMaxLength(50);
+            entity.Property(e => e.Address).HasMaxLength(500);
+            entity.Property(e => e.City).HasMaxLength(100);
+            entity.Property(e => e.PostalCode).HasMaxLength(10);
+            entity.Property(e => e.Province).HasMaxLength(100);
+            entity.Property(e => e.Country).HasMaxLength(2).HasDefaultValue("ES");
+            entity.HasIndex(e => new { e.Series, e.InvoiceNumber }).IsUnique();
+        });
+
+        // Configuración de Money para IssuedInvoice
+        modelBuilder.Entity<IssuedInvoice>(entity =>
+        {
+            entity.OwnsOne(e => e.TaxableBase, money =>
+            {
+                money.Property(m => m.Value).HasColumnName("TaxableBase").HasPrecision(18, 2);
+                money.Property(m => m.Currency).HasColumnName("TaxableBaseCurrency").HasMaxLength(3);
+            });
+            entity.OwnsOne(e => e.TaxAmount, money =>
+            {
+                money.Property(m => m.Value).HasColumnName("TaxAmount").HasPrecision(18, 2);
+                money.Property(m => m.Currency).HasColumnName("TaxAmountCurrency").HasMaxLength(3);
+            });
+            entity.OwnsOne(e => e.TotalAmount, money =>
+            {
+                money.Property(m => m.Value).HasColumnName("TotalAmount").HasPrecision(18, 2);
+                money.Property(m => m.Currency).HasColumnName("TotalAmountCurrency").HasMaxLength(3);
             });
         });
     }

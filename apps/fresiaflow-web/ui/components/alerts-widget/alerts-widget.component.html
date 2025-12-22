@@ -1,0 +1,68 @@
+<div class="alerts-widget">
+  <div class="widget-header">
+    <h3 class="widget-title">
+      <i class="pi pi-bell"></i>
+      Alertas
+    </h3>
+    <span class="alert-count" [class.has-critical]="hasCriticalAlerts">
+      {{ unresolvedAlertsCount }}
+    </span>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando alertas...</span>
+    </div>
+  } @else if (error) {
+    <div class="error-state">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ error }}</span>
+    </div>
+  } @else if (alerts.length === 0) {
+    <div class="empty-state">
+      <i class="pi pi-check-circle"></i>
+      <p>No hay alertas activas</p>
+    </div>
+  } @else {
+    <div class="alerts-list">
+      @for (alert of alerts; track alert.id) {
+        <div class="alert-item" [class.resolved]="isResolved(alert)" [class]="getSeverityClass(alert.severity)">
+          <div class="alert-icon">
+            <i [class]="'pi ' + getAlertTypeIcon(alert.type)"></i>
+          </div>
+          <div class="alert-content">
+            <div class="alert-header">
+              <h4 class="alert-title">{{ alert.title }}</h4>
+              <div class="alert-badges">
+                <span class="alert-severity" [class]="getSeverityClass(alert.severity)">
+                  {{ getSeverityText(alert.severity) }}
+                </span>
+                <span class="alert-type-badge">{{ getAlertTypeText(alert.type) }}</span>
+              </div>
+            </div>
+            <p class="alert-description">{{ alert.description }}</p>
+            <div class="alert-footer">
+              <span class="alert-time">
+                <i class="pi pi-clock"></i>
+                {{ formatDate(alert.occurredAt) }}
+              </span>
+              @if (alert.resolvedAt) {
+                <span class="alert-resolved">
+                  <i class="pi pi-check"></i>
+                  Resuelta
+                </span>
+              } @else if (alert.acknowledgedAt) {
+                <span class="alert-acknowledged">
+                  <i class="pi pi-eye"></i>
+                  Reconocida
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { InvoiceApiPort } from '../../ports/invoice.api.port';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { InvoiceApiPort, UpdateInvoiceRequest, InvoiceFilter } from '../../ports/invoice.api.port';
 import { Invoice } from '../../domain/invoice.model';
 import { firstValueFrom } from 'rxjs';
 
@@ -13,26 +13,36 @@ export class InvoiceHttpAdapter implements InvoiceApiPort {
 
   constructor(private http: HttpClient) {}
 
-  async getAllInvoices(): Promise<Invoice[]> {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:16',message:'getAllInvoices entry',data:{baseUrl:this.baseUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
+  async getAllInvoices(filter?: InvoiceFilter): Promise<Invoice[]> {
     try {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:16',message:'getAllInvoices entry',data:{filter},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      let params = new HttpParams();
+      if (filter?.year) params = params.set('year', filter.year.toString());
+      if (filter?.quarter) params = params.set('quarter', filter.quarter.toString());
+      if (filter?.supplierName) params = params.set('supplierName', filter.supplierName);
+      if (filter?.paymentType) params = params.set('paymentType', filter.paymentType);
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:22',message:'getAllInvoices params built',data:{paramsString:params.toString(),hasYear:!!filter?.year,hasQuarter:!!filter?.quarter,hasSupplier:!!filter?.supplierName,hasPaymentType:!!filter?.paymentType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      console.log('InvoiceHttpAdapter.getAllInvoices - Filtro:', filter);
+      console.log('InvoiceHttpAdapter.getAllInvoices - Params:', params.toString());
+
       const response = await firstValueFrom(
-        this.http.get<Invoice[]>(this.baseUrl)
+        this.http.get<Invoice[]>(this.baseUrl, { params })
       );
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:20',message:'getAllInvoices response received',data:{count:response?.length,firstItem:response?.[0]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:30',message:'getAllInvoices response received',data:{invoiceCount:response.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
       // #endregion
-      const mapped = response.map(this.mapToDomain);
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:24',message:'getAllInvoices mapped',data:{count:mapped.length,firstItemId:mapped[0]?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
-      return mapped;
+      console.log('InvoiceHttpAdapter.getAllInvoices - Respuesta:', response.length, 'facturas');
+      return response.map(this.mapToDomain.bind(this));
     } catch (error: any) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:28',message:'getAllInvoices error',data:{error:error?.message,status:error?.status,statusText:error?.statusText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:33',message:'getAllInvoices error',data:{errorMessage:error?.message,errorStack:error?.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
       // #endregion
+      console.error('InvoiceHttpAdapter.getAllInvoices - Error:', error);
       throw error;
     }
   }
@@ -54,6 +64,13 @@ export class InvoiceHttpAdapter implements InvoiceApiPort {
     return this.mapToDomain(response);
   }
 
+  async updateInvoice(id: string, data: UpdateInvoiceRequest): Promise<Invoice> {
+    const response = await firstValueFrom(
+      this.http.put<Invoice>(`${this.baseUrl}/${id}`, data)
+    );
+    return this.mapToDomain(response);
+  }
+
   async markAsPaid(invoiceId: string, transactionId: string): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(`${this.baseUrl}/${invoiceId}/mark-paid`, { transactionId })
@@ -66,26 +83,79 @@ export class InvoiceHttpAdapter implements InvoiceApiPort {
     );
   }
 
+  async exportToExcel(filter?: InvoiceFilter): Promise<Blob> {
+    let params = new HttpParams();
+    if (filter?.year) params = params.set('year', filter.year.toString());
+    if (filter?.quarter) params = params.set('quarter', filter.quarter.toString());
+    if (filter?.supplierName) params = params.set('supplierName', filter.supplierName);
+    if (filter?.paymentType) params = params.set('paymentType', filter.paymentType);
+
+    const response = await firstValueFrom(
+      this.http.get(`${this.baseUrl}/export`, { 
+        params,
+        responseType: 'blob'
+      })
+    );
+    return response;
+  }
+
+  async chatAboutInvoices(question: string, filter?: InvoiceFilter): Promise<{ answer: string; context?: any }> {
+    let params = new HttpParams();
+    if (filter?.year) params = params.set('year', filter.year.toString());
+    if (filter?.quarter) params = params.set('quarter', filter.quarter.toString());
+    if (filter?.supplierName) params = params.set('supplierName', filter.supplierName);
+    if (filter?.paymentType) params = params.set('paymentType', filter.paymentType);
+
+    const response = await firstValueFrom(
+      this.http.post<{ answer: string; context?: any }>(`${this.baseUrl}/chat`, { question }, { params })
+    );
+    return response;
+  }
+
   private mapToDomain(dto: any): Invoice {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:52',message:'mapToDomain entry',data:{dtoKeys:Object.keys(dto),dtoAmount:dto.amount,dtoIssueDate:dto.issueDate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
     try {
-      const result = {
-        ...dto,
+      const result: Invoice = {
+        id: dto.id,
+        invoiceNumber: dto.invoiceNumber,
         issueDate: new Date(dto.issueDate),
-        dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
-        createdAt: new Date(dto.createdAt),
-        reconciledAt: dto.reconciledAt ? new Date(dto.reconciledAt) : undefined
+        receivedDate: new Date(dto.receivedDate || dto.issueDate),
+        supplierName: dto.supplierName,
+        supplierTaxId: dto.supplierTaxId,
+        supplierAddress: dto.supplierAddress,
+        subtotalAmount: dto.subtotalAmount ?? 0,
+        taxAmount: dto.taxAmount,
+        taxRate: dto.taxRate,
+        totalAmount: dto.totalAmount,
+        currency: dto.currency || 'EUR',
+        paymentType: dto.paymentType === 'Bank' ? 'Bank' as any : 'Cash' as any,
+        payments: (dto.payments || []).map((p: any) => ({
+          id: p.id,
+          bankTransactionId: p.bankTransactionId,
+          amount: p.amount,
+          currency: p.currency || dto.currency || 'EUR',
+          paymentDate: new Date(p.paymentDate)
+        })),
+        origin: dto.origin || 'ManualUpload' as any,
+        originalFilePath: dto.originalFilePath,
+        processedFilePath: dto.processedFilePath,
+        extractionConfidence: dto.extractionConfidence,
+        notes: dto.notes,
+        lines: (dto.lines || []).map((line: any) => ({
+          id: line.id,
+          lineNumber: line.lineNumber,
+          description: line.description,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          unitPriceCurrency: line.unitPriceCurrency || dto.currency || 'EUR',
+          taxRate: line.taxRate,
+          lineTotal: line.lineTotal,
+          lineTotalCurrency: line.lineTotalCurrency || dto.currency || 'EUR'
+        })),
+        createdAt: new Date(dto.createdAt || dto.issueDate),
+        updatedAt: new Date(dto.updatedAt || dto.issueDate)
       };
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:61',message:'mapToDomain success',data:{resultAmount:result.amount,resultIssueDate:result.issueDate},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       return result;
     } catch (error: any) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/49c267d0-fd94-47bb-be0e-0d247024240a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'invoice.http.adapter.ts:67',message:'mapToDomain error',data:{error:error?.message,dto},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       throw error;
     }
   }

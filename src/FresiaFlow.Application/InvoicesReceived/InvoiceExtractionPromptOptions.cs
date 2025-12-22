@@ -9,6 +9,11 @@ public class InvoiceExtractionPromptOptions
     public const string SectionName = "InvoiceExtraction:Prompts";
 
     /// <summary>
+    /// Lista de nombres de empresas propias que deben ser excluidas como proveedores.
+    /// </summary>
+    public List<string> OwnCompanyNames { get; set; } = new() { "FRESIA SOFTWARE SOLUTIONS", "Fresia Software Solutions", "Fresia Software" };
+
+    /// <summary>
     /// Prompt del sistema para extracción de facturas.
     /// </summary>
     public string SystemMessage { get; set; } = "Eres un asistente experto en extracción de datos de facturas. Respondes únicamente con JSON válido.";
@@ -48,6 +53,21 @@ FACTURA:
 FACTURA:
 {0}
 
+IMPORTANTE - EXCLUSIÓN DE EMPRESAS PROPIAS:
+Las siguientes empresas son PROPIAS y NO deben ser consideradas como proveedores:
+{1}
+
+Si el proveedor de la factura coincide con alguna de estas empresas, NO proceses esta factura como factura recibida. En su lugar, devuelve null para supplierName o indica claramente que es una factura propia.
+
+CRÍTICO - EXTRACCIÓN DEL PROVEEDOR:
+- El PROVEEDOR (supplierName) es la empresa que EMITE la factura (quien vende/presta el servicio)
+- El proveedor aparece típicamente en la parte superior de la factura, en la sección ""EMISOR"", ""DE:"", ""FROM:"", o en el encabezado
+- El proveedor NO es el cliente (quien recibe la factura)
+- El proveedor NO es tu empresa propia (listada arriba)
+- SIEMPRE debes extraer el nombre completo del proveedor, incluso si es parcialmente visible
+- Si no puedes identificar claramente al proveedor, usa el nombre que aparezca en el campo de emisor/vendedor de la factura
+- NUNCA dejes supplierName vacío o null a menos que sea una empresa propia
+
 Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin texto adicional):
 {{
   ""invoiceNumber"": ""string"",
@@ -72,11 +92,13 @@ Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin text
 }}
 
 Reglas:
+- supplierName es OBLIGATORIO y debe contener el nombre de la empresa que emite la factura
 - Si no encuentras un campo, usa null para opcionales o un valor vacío/cero apropiado
 - Las fechas deben estar en formato ISO (YYYY-MM-DD)
 - Los números decimales deben usar punto como separador
 - El currency por defecto es EUR si no se especifica
 - Si no hay líneas detalladas, devuelve array vacío
+- NUNCA uses como supplierName ninguna de las empresas propias listadas arriba
 - Devuelve SOLO el JSON, sin markdown ni texto adicional";
 }
 

@@ -1,0 +1,81 @@
+<div class="bank-summary-widget">
+  <div class="widget-header">
+    <h3 class="widget-title">
+      <i class="pi pi-wallet"></i>
+      Resumen Bancario
+    </h3>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Cargando saldos...</span>
+    </div>
+  } @else if (error) {
+    <div class="error-state">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span>{{ error }}</span>
+    </div>
+  } @else if (!bankSummary || bankSummary.banks.length === 0) {
+    <div class="empty-state">
+      <i class="pi pi-info-circle"></i>
+      <p>No hay bancos conectados</p>
+    </div>
+  } @else {
+    <div class="bank-summary-content">
+      <!-- Resumen Global -->
+      <div class="summary-card">
+        <div class="summary-label">Saldo Total</div>
+        <div class="summary-amount">
+          {{ formatCurrency(bankSummary.totalBalance, bankSummary.primaryCurrency) }}
+        </div>
+        @if (bankSummary.previousDayVariation !== undefined) {
+          <div class="summary-variation" [class]="getVariationClass(bankSummary.previousDayVariation)">
+            <i [class]="bankSummary.previousDayVariation >= 0 ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+            {{ formatVariation(bankSummary.previousDayVariation) }} vs. día anterior
+          </div>
+        }
+        @if (bankSummary.previousMonthVariation !== undefined) {
+          <div class="summary-variation" [class]="getVariationClass(bankSummary.previousMonthVariation)">
+            <i [class]="bankSummary.previousMonthVariation >= 0 ? 'pi pi-arrow-up' : 'pi pi-arrow-down'"></i>
+            {{ formatVariation(bankSummary.previousMonthVariation) }} vs. mes anterior
+          </div>
+        }
+      </div>
+
+      <!-- Lista de Bancos -->
+      <div class="banks-list">
+        <h4 class="banks-list-title">Bancos</h4>
+        @for (bank of bankSummary.banks; track bank.bankId) {
+          <div class="bank-item">
+            <div class="bank-header">
+              <div class="bank-info">
+                <h5 class="bank-name">{{ bank.bankName }}</h5>
+                @if (bank.accountNumber) {
+                  <span class="bank-account">{{ bank.accountNumber }}</span>
+                }
+              </div>
+              <div class="bank-balance">
+                {{ formatCurrency(bank.balance, bank.currency) }}
+              </div>
+            </div>
+            @if (bank.lastMovementDate) {
+              <div class="bank-footer">
+                <span class="last-movement">
+                  <i class="pi pi-clock"></i>
+                  Último movimiento: {{ formatDate(bank.lastMovementDate) }}
+                  @if (bank.lastMovementAmount !== undefined) {
+                    <span class="movement-amount" [class.positive]="bank.lastMovementAmount >= 0" [class.negative]="bank.lastMovementAmount < 0">
+                      ({{ formatCurrency(bank.lastMovementAmount, bank.currency) }})
+                    </span>
+                  }
+                </span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
+

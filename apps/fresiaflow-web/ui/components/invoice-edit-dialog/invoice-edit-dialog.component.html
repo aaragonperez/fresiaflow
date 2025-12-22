@@ -1,0 +1,165 @@
+<p-dialog 
+  [(visible)]="visible" 
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true" 
+  [style]="{width: '700px'}"
+  header="Editar Factura"
+  [draggable]="false"
+  [resizable]="false">
+  
+  <div class="edit-form" *ngIf="invoice">
+    <div class="form-group">
+      <label for="invoiceNumber">Número de Factura *</label>
+      <input 
+        id="invoiceNumber"
+        type="text" 
+        pInputText 
+        [(ngModel)]="editData.invoiceNumber"
+        class="w-full" 
+        required />
+    </div>
+
+    <div class="form-group">
+      <label for="supplierName">Proveedor *</label>
+      <input 
+        id="supplierName"
+        type="text" 
+        pInputText 
+        [(ngModel)]="editData.supplierName"
+        class="w-full" 
+        required />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="supplierTaxId">NIF/CIF</label>
+        <input 
+          id="supplierTaxId"
+          type="text" 
+          pInputText 
+          [(ngModel)]="editData.supplierTaxId"
+          class="w-full" />
+      </div>
+
+      <div class="form-group">
+        <label for="supplierAddress">Dirección Fiscal</label>
+        <input 
+          id="supplierAddress"
+          type="text" 
+          pInputText 
+          [(ngModel)]="editData.supplierAddress"
+          class="w-full" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="issueDate">Fecha Emisión *</label>
+        <p-calendar 
+          id="issueDate"
+          [(ngModel)]="editData.issueDate"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          styleClass="w-full"></p-calendar>
+      </div>
+
+      <div class="form-group">
+        <label for="receivedDate">Fecha Recepción *</label>
+        <p-calendar 
+          id="receivedDate"
+          [(ngModel)]="editData.receivedDate"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          styleClass="w-full"></p-calendar>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="subtotalAmount">Base Imponible *</label>
+        <p-inputNumber 
+          id="subtotalAmount"
+          [(ngModel)]="editData.subtotalAmount"
+          mode="decimal"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          styleClass="w-full"
+          required></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="taxRate">% IVA</label>
+        <p-inputNumber 
+          id="taxRate"
+          [(ngModel)]="editData.taxRate"
+          mode="decimal"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          [min]="0"
+          [max]="100"
+          suffix="%"
+          styleClass="w-full"></p-inputNumber>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="taxAmount">IVA</label>
+        <p-inputNumber 
+          id="taxAmount"
+          [(ngModel)]="editData.taxAmount"
+          mode="decimal"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          styleClass="w-full"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
+        <label for="totalAmount">Total *</label>
+        <p-inputNumber 
+          id="totalAmount"
+          [(ngModel)]="editData.totalAmount"
+          mode="decimal"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          styleClass="w-full"
+          required></p-inputNumber>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="currency">Moneda *</label>
+      <input 
+        id="currency"
+        type="text" 
+        pInputText 
+        [(ngModel)]="editData.currency"
+        class="w-full"
+        placeholder="EUR"
+        required />
+    </div>
+
+    <div class="form-group">
+      <label for="notes">Notas</label>
+      <textarea 
+        id="notes"
+        pInputTextarea 
+        [(ngModel)]="editData.notes"
+        [rows]="3"
+        class="w-full"></textarea>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <p-button 
+      label="Cancelar" 
+      icon="pi pi-times" 
+      (onClick)="onCancel()"
+      [text]="true"></p-button>
+    <p-button 
+      label="Guardar" 
+      icon="pi pi-check" 
+      (onClick)="onSave()"
+      [disabled]="!editData.supplierName || !editData.totalAmount || !editData.invoiceNumber"></p-button>
+  </ng-template>
+</p-dialog>

@@ -4,46 +4,199 @@
     <div class="header-content">
       <h1>
         <i class="pi pi-file-pdf"></i>
-        Facturas
+        Facturas Recibidas
       </h1>
-      <p class="subtitle">Gestiona y controla todas tus facturas</p>
+      <p class="subtitle">Gestión contable de facturas recibidas de proveedores</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="exportToExcel()" [disabled]="loading()">
+        <i class="pi pi-file-excel"></i>
+        Exportar Excel
+      </button>
+      <button class="btn btn-secondary" (click)="showChat.set(!showChat())">
+        <i class="pi pi-comments"></i>
+        Chat IA
+      </button>
     </div>
   </div>
 
-  <!-- Estadísticas -->
+  <!-- Estadísticas Contables - Compactas -->
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-icon">
         <i class="pi pi-file"></i>
       </div>
-      <div class="stat-value">{{ invoices().length }}</div>
-      <div class="stat-label">Total Facturas</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ invoices().length }}</div>
+        <div class="stat-label">Total Facturas</div>
+      </div>
     </div>
     
     <div class="stat-card">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #fef3c7 0%, #fcd34d 100%); color: #d97706;">
-        <i class="pi pi-clock"></i>
+      <div class="stat-icon bank">
+        <i class="pi pi-credit-card"></i>
       </div>
-      <div class="stat-value">{{ pendingInvoices().length }}</div>
-      <div class="stat-label">Pendientes</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ bankInvoices().length }}</div>
+        <div class="stat-label">Pago Banco</div>
+      </div>
     </div>
 
     <div class="stat-card">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%); color: #b91c1c;">
+      <div class="stat-icon cash">
+        <i class="pi pi-money-bill"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ cashInvoices().length }}</div>
+        <div class="stat-label">Pago Efectivo</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon warning">
         <i class="pi pi-exclamation-triangle"></i>
       </div>
-      <div class="stat-value">{{ overdueInvoices().length }}</div>
-      <div class="stat-label">Vencidas</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ lowConfidenceInvoices().length }}</div>
+        <div class="stat-label">Baja Confianza</div>
+      </div>
     </div>
 
-    <div class="stat-card">
-      <div class="stat-icon" style="background: linear-gradient(135deg, #d1fae5 0%, #6ee7b7 100%); color: #059669;">
-        <i class="pi pi-check-circle"></i>
+    <div class="stat-card financial">
+      <div class="stat-icon financial-icon">
+        <i class="pi pi-euro"></i>
       </div>
-      <div class="stat-value">{{ paidInvoices().length }}</div>
-      <div class="stat-label">Pagadas</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ totalAmount() | number:'1.2-2' }} <span class="currency">€</span></div>
+        <div class="stat-label">Total Facturado</div>
+      </div>
+    </div>
+
+    <div class="stat-card financial">
+      <div class="stat-icon tax-icon">
+        <i class="pi pi-percentage"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ totalTaxAmount() | number:'1.2-2' }} <span class="currency">€</span></div>
+        <div class="stat-label">Total IVA</div>
+      </div>
+    </div>
+
+    <div class="stat-card financial">
+      <div class="stat-icon base-icon">
+        <i class="pi pi-calculator"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ totalSubtotalAmount() | number:'1.2-2' }} <span class="currency">€</span></div>
+        <div class="stat-label">Base Imponible</div>
+      </div>
     </div>
   </div>
+
+  <!-- Filtros Contables - Colapsable -->
+  <div class="collapsible-section" [class.collapsed]="filtersCollapsed()">
+    <div class="section-header" (click)="filtersCollapsed.set(!filtersCollapsed())">
+      <div class="section-title">
+        <i class="pi pi-filter"></i>
+        <h3>Filtros Contables</h3>
+        <span class="active-filters-badge" *ngIf="filterYear() || filterQuarter() || filterSupplier() || filterPaymentType()">
+          Filtros activos
+        </span>
+      </div>
+      <div class="section-actions">
+        <button class="btn-clear-filters" (click)="clearFilters(); $event.stopPropagation()" 
+                [disabled]="!filterYear() && !filterQuarter() && !filterSupplier() && !filterPaymentType()">
+          <i class="pi pi-times"></i> Limpiar
+        </button>
+        <i class="collapse-icon pi" [class.pi-chevron-down]="filtersCollapsed()" [class.pi-chevron-up]="!filtersCollapsed()"></i>
+      </div>
+    </div>
+    <div class="section-content" [class.hidden]="filtersCollapsed()">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label><i class="pi pi-calendar"></i> Año Fiscal</label>
+          <select [ngModel]="filterYear()" (ngModelChange)="onYearChange($event)">
+            <option [ngValue]="null">Todos los años</option>
+            @for (year of availableYears; track year) {
+              <option [ngValue]="year">{{ year }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label><i class="pi pi-calendar-times"></i> Trimestre</label>
+          <select [ngModel]="filterQuarter()" (ngModelChange)="onQuarterChange($event)">
+            <option [ngValue]="null">Todos</option>
+            @for (q of quarters; track q) {
+              <option [ngValue]="q">Q{{ q }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label><i class="pi pi-building"></i> Proveedor</label>
+          <input 
+            type="text" 
+            [ngModel]="filterSupplier()" 
+            (ngModelChange)="filterSupplier.set($event)"
+            (keyup.enter)="loadInvoices()"
+            (blur)="loadInvoices()"
+            placeholder="Buscar por nombre..."
+          />
+        </div>
+
+        <div class="filter-group">
+          <label><i class="pi pi-credit-card"></i> Tipo de Pago</label>
+          <select [ngModel]="filterPaymentType()" (ngModelChange)="onPaymentTypeChange($event)">
+            <option [ngValue]="null">Todos</option>
+            <option [ngValue]="'Bank'">Banco</option>
+            <option [ngValue]="'Cash'">Efectivo</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat IA -->
+  @if (showChat()) {
+    <div class="chat-section">
+      <div class="chat-header">
+        <h3><i class="pi pi-comments"></i> Chat sobre Facturas</h3>
+        <button class="btn-close-chat" (click)="showChat.set(false)">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+      <div class="chat-container">
+        <div class="chat-examples">
+          <p><strong>Ejemplos de preguntas:</strong></p>
+          <ul>
+            <li>"¿Cuánto IVA he pagado en el segundo trimestre?"</li>
+            <li>"¿Qué proveedor me factura más?"</li>
+            <li>"Facturas pagadas en efectivo este año"</li>
+          </ul>
+        </div>
+        <div class="chat-input">
+          <input 
+            type="text" 
+            [ngModel]="chatQuestion()" 
+            (ngModelChange)="chatQuestion.set($event)"
+            (keyup.enter)="sendChatQuestion()"
+            placeholder="Haz una pregunta sobre tus facturas..."
+          />
+          <button class="btn btn-primary" (click)="sendChatQuestion()" [disabled]="loading() || !chatQuestion().trim()">
+            <i class="pi pi-send"></i>
+            Enviar
+          </button>
+        </div>
+        @if (chatAnswer()) {
+          <div class="chat-answer">
+            <strong>Respuesta:</strong>
+            <p>{{ chatAnswer() }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
 
   @if (loading()) {
     <div class="loading-state">
@@ -59,84 +212,80 @@
     </div>
   }
 
-  <!-- Subir factura -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">
-        <i class="pi pi-upload"></i>
-        Subir Nueva Factura
-      </h2>
+  <!-- Área de carga de archivos - Colapsable -->
+  <div class="collapsible-section" [class.collapsed]="uploadCollapsed()">
+    <div class="section-header" (click)="uploadCollapsed.set(!uploadCollapsed())">
+      <div class="section-title">
+        <i class="pi pi-cloud-upload"></i>
+        <h3>Subir Facturas</h3>
+      </div>
+      <div class="section-actions">
+        <i class="collapse-icon pi" [class.pi-chevron-down]="uploadCollapsed()" [class.pi-chevron-up]="!uploadCollapsed()"></i>
+      </div>
     </div>
-    
-    <div class="upload-form">
-      <div class="file-upload-area">
+    <div class="section-content" [class.hidden]="uploadCollapsed()">
+      <div 
+        class="upload-area" 
+        [class.drag-over]="isDragging"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
         <input
           type="file"
-          accept=".pdf"
+          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
           (change)="onFileSelected($event)"
           #fileInput
           id="fileInput"
+          multiple
           style="display: none;"
         />
         <label for="fileInput" class="file-upload-label">
-          <i class="pi pi-cloud-upload" style="font-size: 3rem; color: #dc2626; margin-bottom: 1rem;"></i>
+          <i class="pi pi-cloud-upload"></i>
           <div class="upload-text">
             <strong>Haz clic para subir</strong> o arrastra aquí
           </div>
-          <div class="upload-hint">PDF, máximo 10MB</div>
+          <div class="upload-hint">PDF o imágenes (JPG, PNG, GIF, WEBP) - Múltiples archivos</div>
         </label>
       </div>
     </div>
   </div>
 
-  <!-- Facturas pendientes -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">
-        <i class="pi pi-clock"></i>
-        Facturas Pendientes
-      </h2>
-      <span class="badge">{{ pendingInvoices().length }}</span>
-    </div>
-    
-    <app-invoice-table [invoices]="pendingInvoices()"></app-invoice-table>
-  </div>
-
-  <!-- Facturas vencidas -->
-  @if (overdueInvoices().length > 0) {
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title">
-          <i class="pi pi-exclamation-triangle"></i>
-          Facturas Vencidas
-        </h2>
-        <span class="badge" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
-          {{ overdueInvoices().length }}
-        </span>
+  <!-- Tabla de facturas - Colapsable -->
+  @if (!loading() && invoices().length > 0) {
+    <div class="collapsible-section" [class.collapsed]="tableCollapsed()">
+      <div class="section-header" (click)="tableCollapsed.set(!tableCollapsed())">
+        <div class="section-title">
+          <i class="pi pi-list"></i>
+          <h3>Listado de Facturas</h3>
+          <span class="count-badge">{{ invoices().length }}</span>
+        </div>
+        <div class="section-actions">
+          <i class="collapse-icon pi" [class.pi-chevron-down]="tableCollapsed()" [class.pi-chevron-up]="!tableCollapsed()"></i>
+        </div>
       </div>
-      
-      <app-invoice-table [invoices]="overdueInvoices()"></app-invoice-table>
+      <div class="section-content" [class.hidden]="tableCollapsed()">
+        <app-invoice-table 
+          [invoices]="invoices()"
+          (deleteInvoice)="onDeleteInvoice($event)"
+          (editInvoice)="onEditInvoice($event)"
+        />
+      </div>
     </div>
   }
 
-  <!-- Todas las facturas -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">
-        <i class="pi pi-list"></i>
-        Todas las Facturas
-      </h2>
-      <span class="badge">{{ invoices().length }}</span>
+  @if (!loading() && invoices().length === 0) {
+    <div class="empty-state">
+      <i class="pi pi-inbox"></i>
+      <h3>No hay facturas que mostrar</h3>
+      <p class="empty-hint">Sube tu primera factura usando el área de carga de arriba</p>
     </div>
-    
-    @if (invoices().length === 0) {
-      <div class="empty-state">
-        <i class="pi pi-inbox" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem;"></i>
-        <p>No hay facturas registradas</p>
-      </div>
-    } @else {
-      <app-invoice-table [invoices]="invoices()"></app-invoice-table>
-    }
-  </div>
-</div>
+  }
 
+  <!-- Diálogo de edición -->
+  <app-invoice-edit-dialog
+    [invoice]="editingInvoice()"
+    [(visible)]="editDialogVisible"
+    (save)="onSaveInvoice($event)"
+  />
+</div>

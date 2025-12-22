@@ -1,32 +1,173 @@
-<table class="invoice-table">
-  <thead>
-    <tr>
-      <th>Número</th>
-      <th>Proveedor</th>
-      <th>Fecha Emisión</th>
-      <th>Fecha Vencimiento</th>
-      <th>Monto</th>
-      <th>Estado</th>
-    </tr>
-  </thead>
-  <tbody>
-    @for (invoice of invoices; track invoice.id) {
+<div class="invoice-table-container">
+  <p-table
+    #dt
+    [value]="invoices"
+    dataKey="id"
+    [paginator]="true"
+    [rows]="rows"
+    [rowsPerPageOptions]="rowsPerPageOptions"
+    [rowHover]="true"
+    [sortMode]="'multiple'"
+    [responsiveLayout]="'scroll'"
+    [autoLayout]="true"
+    [expandedRowKeys]="expandedRowKeys"
+    [showCurrentPageReport]="false"
+    styleClass="invoice-p-table paginator-compact"
+    (onRowExpand)="onRowExpand($event.data?.id)"
+    (onRowCollapse)="onRowCollapse($event.data?.id)"
+  >
+    <ng-template pTemplate="caption">
+      <div class="table-caption">
+        <span><i class="pi pi-list"></i> Facturas</span>
+        <button
+          pButton
+          type="button"
+          class="p-button-text p-button-sm"
+          icon="pi pi-filter-slash"
+          label="Limpiar filtros"
+          (click)="dt.reset()"
+        ></button>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
       <tr>
-        <td>{{ invoice.invoiceNumber }}</td>
-        <td>{{ invoice.supplierName }}</td>
-        <td>{{ invoice.issueDate | date }}</td>
-        <td>{{ invoice.dueDate | date }}</td>
-        <td>{{ invoice.amount.value | currency: invoice.amount.currency }}</td>
-        <td>
-          @switch (invoice.status) {
-            @case (0) { Pendiente }
-            @case (1) { Pagada }
-            @case (2) { Vencida }
-            @case (3) { Cancelada }
-          }
+        <th class="expander-col"></th>
+        <th pSortableColumn="invoiceNumber">Número <p-sortIcon field="invoiceNumber" /></th>
+        <th pSortableColumn="supplierName">Proveedor <p-sortIcon field="supplierName" /></th>
+        <th pSortableColumn="supplierTaxId">NIF/CIF <p-sortIcon field="supplierTaxId" /></th>
+        <th pSortableColumn="issueDate">Emisión <p-sortIcon field="issueDate" /></th>
+        <th pSortableColumn="receivedDate">Recepción <p-sortIcon field="receivedDate" /></th>
+        <th pSortableColumn="subtotalAmount">Base <p-sortIcon field="subtotalAmount" /></th>
+        <th pSortableColumn="taxAmount">IVA <p-sortIcon field="taxAmount" /></th>
+        <th pSortableColumn="totalAmount">Total <p-sortIcon field="totalAmount" /></th>
+        <th pSortableColumn="currency">Moneda <p-sortIcon field="currency" /></th>
+        <th pSortableColumn="paymentType">Tipo Pago <p-sortIcon field="paymentType" /></th>
+        <th class="actions-col">Acciones</th>
+      </tr>
+      <tr class="filter-row">
+        <th></th>
+        <th><input pInputText type="text" placeholder="Buscar" (input)="dt.filter($any($event.target).value, 'invoiceNumber', 'contains')" /></th>
+        <th><input pInputText type="text" placeholder="Proveedor" (input)="dt.filter($any($event.target).value, 'supplierName', 'contains')" /></th>
+        <th><input pInputText type="text" placeholder="NIF/CIF" (input)="dt.filter($any($event.target).value, 'supplierTaxId', 'contains')" /></th>
+        <th><input pInputText type="date" (input)="dt.filter($any($event.target).value, 'issueDate', 'equals')" /></th>
+        <th><input pInputText type="date" (input)="dt.filter($any($event.target).value, 'receivedDate', 'equals')" /></th>
+        <th><input pInputText type="number" placeholder="≥" (input)="dt.filter($any($event.target).value, 'subtotalAmount', 'gte')" /></th>
+        <th><input pInputText type="number" placeholder="≥" (input)="dt.filter($any($event.target).value, 'taxAmount', 'gte')" /></th>
+        <th><input pInputText type="number" placeholder="≥" (input)="dt.filter($any($event.target).value, 'totalAmount', 'gte')" /></th>
+        <th><input pInputText type="text" placeholder="€/$" (input)="dt.filter($any($event.target).value, 'currency', 'contains')" /></th>
+        <th>
+          <select class="filter-select" (change)="dt.filter($any($event.target).value || null, 'paymentType', 'equals')">
+            <option value="">Todos</option>
+            <option value="Bank">Banco</option>
+            <option value="Cash">Efectivo</option>
+          </select>
+        </th>
+        <th>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-filter-slash"
+            class="p-button-text p-button-sm reset-button"
+            (click)="dt.reset()"
+            title="Limpiar filtros"
+          ></button>
+        </th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-inv let-expanded="expanded">
+      <tr>
+        <td class="expander-col">
+          <button
+            pButton
+            type="button"
+            class="p-button-text p-button-sm toggle-lines"
+            [pRowToggler]="inv"
+            [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+            [label]="(inv.lines?.length || 0).toString()"
+            [disabled]="!inv.lines?.length"
+          ></button>
+        </td>
+        <td class="col-number" pTooltip="{{ inv.invoiceNumber }}">{{ inv.invoiceNumber }}</td>
+        <td class="col-supplier" pTooltip="{{ inv.supplierName }}">{{ inv.supplierName }}</td>
+        <td class="col-taxid">{{ inv.supplierTaxId || '-' }}</td>
+        <td class="col-date">{{ inv.issueDate | date:'dd/MM/yyyy' }}</td>
+        <td class="col-date">{{ inv.receivedDate | date:'dd/MM/yyyy' }}</td>
+        <td class="col-amount">{{ inv.subtotalAmount | number:'1.2-2' }}</td>
+        <td class="col-amount">{{ inv.taxAmount ? (inv.taxAmount | number:'1.2-2') : '-' }}</td>
+        <td class="col-amount strong">{{ inv.totalAmount | number:'1.2-2' }}</td>
+        <td class="col-currency">{{ inv.currency }}</td>
+        <td class="col-payment">
+          <span class="payment-type-badge" [class.payment-bank]="inv.paymentType === 'Bank'" [class.payment-cash]="inv.paymentType === 'Cash'">
+            <i class="pi" [ngClass]="inv.paymentType === 'Bank' ? 'pi-credit-card' : 'pi-money-bill'"></i>
+            {{ inv.paymentType === 'Bank' ? 'Banco' : 'Efectivo' }}
+          </span>
+        </td>
+        <td class="actions-col">
+          <div class="action-buttons">
+            <button
+              pButton
+              type="button"
+              class="p-button-rounded p-button-text p-button-sm"
+              icon="pi pi-pencil"
+              (click)="onEdit(inv)"
+              title="Editar factura"
+            ></button>
+            <button
+              pButton
+              type="button"
+              class="p-button-rounded p-button-text p-button-sm p-button-danger"
+              icon="pi pi-trash"
+              (click)="onDelete(inv.id)"
+              title="Eliminar factura"
+            ></button>
+          </div>
         </td>
       </tr>
-    }
-  </tbody>
-</table>
+    </ng-template>
 
+    <ng-template pTemplate="rowexpansion" let-inv>
+      <tr>
+        <td [attr.colspan]="12">
+          <div class="lines-container">
+            <div class="lines-header">
+              <i class="pi pi-bars"></i>
+              <span>Líneas de Detalle ({{ inv.lines?.length || 0 }})</span>
+            </div>
+            @if (inv.lines && inv.lines.length > 0) {
+              <div class="lines-scroll">
+                <table class="lines-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 40px">#</th>
+                      <th>Descripción</th>
+                      <th style="width: 80px">Cantidad</th>
+                      <th style="width: 100px">Precio Unit.</th>
+                      <th style="width: 70px">% IVA</th>
+                      <th style="width: 120px">Total Línea</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (line of inv.lines; track $index) {
+                      <tr>
+                        <td>{{ line.lineNumber }}</td>
+                        <td class="line-desc" [pTooltip]="line.description">{{ line.description }}</td>
+                        <td>{{ line.quantity | number:'1.2-2' }}</td>
+                        <td>{{ line.unitPrice | number:'1.2-2' }} {{ line.unitPriceCurrency }}</td>
+                        <td>{{ line.taxRate ? (line.taxRate | number:'1.2-2') + '%' : '-' }}</td>
+                        <td class="strong">{{ line.lineTotal | number:'1.2-2' }} {{ line.lineTotalCurrency }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="no-lines-msg">Esta factura no tiene líneas de detalle.</div>
+            }
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</div>

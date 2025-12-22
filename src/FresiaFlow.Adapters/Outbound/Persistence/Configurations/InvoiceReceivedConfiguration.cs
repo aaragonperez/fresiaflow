@@ -29,10 +29,14 @@ public class InvoiceReceivedConfiguration : IEntityTypeConfiguration<InvoiceRece
         builder.Property(i => i.SupplierTaxId)
             .HasMaxLength(50);
 
+        builder.Property(i => i.SupplierAddress)
+            .HasMaxLength(500);
+
         builder.Property(i => i.IssueDate)
             .IsRequired();
 
-        builder.Property(i => i.DueDate);
+        builder.Property(i => i.ReceivedDate)
+            .IsRequired();
 
         // Configurar Money como objeto de valor (Owned Type)
         builder.OwnsOne(i => i.TotalAmount, money =>
@@ -63,16 +67,31 @@ public class InvoiceReceivedConfiguration : IEntityTypeConfiguration<InvoiceRece
         {
             money.Property(m => m.Value)
                 .HasColumnName("SubtotalAmount")
-                .HasPrecision(18, 2);
+                .HasPrecision(18, 2)
+                .IsRequired();
 
             money.Property(m => m.Currency)
                 .HasColumnName("SubtotalCurrency")
-                .HasMaxLength(3);
+                .HasMaxLength(3)
+                .IsRequired();
         });
 
         builder.Property(i => i.Currency)
             .IsRequired()
             .HasMaxLength(3);
+
+        builder.Property(i => i.TaxRate)
+            .HasPrecision(5, 2);
+
+        builder.Property(i => i.PaymentType)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(20);
+
+        builder.Property(i => i.Origin)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(20);
 
         builder.Property(i => i.OriginalFilePath)
             .IsRequired()
@@ -81,22 +100,24 @@ public class InvoiceReceivedConfiguration : IEntityTypeConfiguration<InvoiceRece
         builder.Property(i => i.ProcessedFilePath)
             .HasMaxLength(500);
 
-        builder.Property(i => i.ProcessedAt)
-            .IsRequired();
-
-        builder.Property(i => i.Status)
-            .IsRequired()
-            .HasConversion<string>()
-            .HasMaxLength(50);
+        builder.Property(i => i.ExtractionConfidence)
+            .HasPrecision(3, 2);
 
         builder.Property(i => i.Notes)
             .HasMaxLength(1000);
+
+        builder.Property(i => i.CreatedAt)
+            .IsRequired();
+
+        builder.Property(i => i.UpdatedAt)
+            .IsRequired();
 
         // Relación con líneas
         builder.HasMany(i => i.Lines)
             .WithOne(l => l.InvoiceReceived)
             .HasForeignKey(l => l.InvoiceReceivedId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Relación con pagos (configurada en InvoiceReceivedPaymentConfiguration)
     }
 }
-

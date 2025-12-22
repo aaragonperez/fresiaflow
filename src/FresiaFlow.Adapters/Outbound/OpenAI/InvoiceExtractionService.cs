@@ -69,8 +69,15 @@ public class InvoiceExtractionService : IInvoiceExtractionService
 
     private string BuildExtractionPrompt(string invoiceText)
     {
-        // Usar prompt desde configuración
-        return string.Format(_promptOptions.CompleteExtractionTemplate, invoiceText);
+        // Construir lista de empresas propias para el prompt
+        var ownCompaniesList = _promptOptions.OwnCompanyNames != null && _promptOptions.OwnCompanyNames.Any()
+            ? string.Join(", ", _promptOptions.OwnCompanyNames)
+            : "NINGUNA";
+        
+        // Usar prompt desde configuración con empresas propias
+        return _promptOptions.CompleteExtractionTemplate
+            .Replace("{0}", invoiceText)
+            .Replace("{1}", ownCompaniesList);
     }
 
     private async Task<string> CallOpenAiAsync(string prompt, CancellationToken cancellationToken)

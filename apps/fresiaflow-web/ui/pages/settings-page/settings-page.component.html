@@ -1,0 +1,92 @@
+<div class="settings-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>
+        <i class="pi pi-cog"></i>
+        Configuración
+      </h1>
+      <p class="subtitle">Gestiona la configuración de la aplicación</p>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #dc2626;"></i>
+      <p>Cargando configuración...</p>
+    </div>
+  }
+
+  @if (error) {
+    <div class="error-message">
+      <i class="pi pi-exclamation-triangle"></i>
+      {{ error }}
+    </div>
+  }
+
+  @if (successMessage) {
+    <div class="success-message">
+      <i class="pi pi-check-circle"></i>
+      {{ successMessage }}
+    </div>
+  }
+
+  <!-- Configuración de Empresas Propias -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">
+        <i class="pi pi-building"></i>
+        Empresas Propias
+      </h2>
+    </div>
+    
+    <div class="card-content">
+      <p class="description">
+        Las empresas listadas aquí NO serán consideradas como proveedores al procesar facturas.
+        Si una factura tiene como proveedor alguna de estas empresas, no se procesará como factura recibida.
+      </p>
+
+      <div class="add-company-section">
+        <div class="input-group">
+          <input
+            type="text"
+            [(ngModel)]="newCompanyName"
+            (keypress)="onKeyPress($event)"
+            placeholder="Nombre de la empresa"
+            class="input-field"
+          />
+          <button class="btn-add" (click)="addCompany()" [disabled]="!newCompanyName.trim()">
+            <i class="pi pi-plus"></i>
+            Agregar
+          </button>
+        </div>
+      </div>
+
+      <div class="companies-list">
+        @if (ownCompanyNames.length === 0) {
+          <div class="empty-state">
+            <i class="pi pi-info-circle"></i>
+            <p>No hay empresas propias configuradas</p>
+          </div>
+        } @else {
+          @for (company of ownCompanyNames; track $index) {
+            <div class="company-item">
+              <span class="company-name">{{ company }}</span>
+              <button class="btn-remove" (click)="removeCompany($index)" title="Eliminar">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
+          }
+        }
+      </div>
+
+      <div class="actions">
+        <button class="btn-save" (click)="saveSettings()" [disabled]="loading">
+          <i class="pi pi-save"></i>
+          Guardar Configuración
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+

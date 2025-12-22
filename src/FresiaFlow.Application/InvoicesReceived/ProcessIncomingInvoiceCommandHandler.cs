@@ -64,27 +64,52 @@ public class ProcessIncomingInvoiceCommandHandler : IProcessIncomingInvoiceComma
                     $"La factura {extractedData.InvoiceNumber} ya fue procesada anteriormente.");
             }
 
-            // 4. Crear entidad de dominio
+            // 4. Convertir fechas a UTC para PostgreSQL
+            var issueDate = EnsureUtc(extractedData.GetIssueDate());
+            var dueDate = extractedData.GetDueDate();
+            var dueDateUtc = dueDate.HasValue ? EnsureUtc(dueDate.Value) : (DateTime?)null;
+
+            // 5. Crear entidad de dominio
+            var currency = string.IsNullOrWhiteSpace(extractedData.Currency) ? "EUR" : extractedData.Currency;
+            var receivedDate = DateTime.UtcNow;
+            
+            // Calcular base imponible: si no viene, calcularla restando IVA del total
+            var subtotalAmount = extractedData.SubtotalAmount ?? 
+                (extractedData.TaxAmount.HasValue 
+                    ? extractedData.TotalAmount - extractedData.TaxAmount.Value 
+                    : extractedData.TotalAmount);
+            
             var invoice = new InvoiceReceived(
                 extractedData.InvoiceNumber,
                 extractedData.SupplierName,
-                extractedData.IssueDate,
-                new Money(extractedData.TotalAmount, extractedData.Currency),
-                extractedData.Currency,
+                issueDate,
+                receivedDate,
+                new Money(subtotalAmount, currency),
+                new Money(extractedData.TotalAmount, currency),
+                currency,
+                InvoiceOrigin.Email,
                 command.FilePath);
 
             // Configurar campos opcionales
             if (!string.IsNullOrWhiteSpace(extractedData.SupplierTaxId))
                 invoice.SetSupplierTaxId(extractedData.SupplierTaxId);
 
-            if (extractedData.DueDate.HasValue)
-                invoice.SetDueDate(extractedData.DueDate);
-
             if (extractedData.TaxAmount.HasValue)
-                invoice.SetTaxAmount(new Money(extractedData.TaxAmount.Value, extractedData.Currency));
+            {
+                invoice.SetTaxAmount(new Money(extractedData.TaxAmount.Value, currency));
+                // Calcular tipo de IVA si tenemos base e IVA
+                if (subtotalAmount > 0)
+                {
+                    var taxRate = (extractedData.TaxAmount.Value / subtotalAmount) * 100m;
+                    invoice.SetTaxRate(taxRate);
+                }
+            }
 
-            if (extractedData.SubtotalAmount.HasValue)
-                invoice.SetSubtotalAmount(new Money(extractedData.SubtotalAmount.Value, extractedData.Currency));
+            // La base imponible ya se estableció en el constructor, pero si viene explícitamente la actualizamos
+            if (extractedData.SubtotalAmount.HasValue && extractedData.SubtotalAmount.Value != subtotalAmount)
+            {
+                invoice.SetSubtotalAmount(new Money(extractedData.SubtotalAmount.Value, currency));
+            }
 
             // Agregar líneas de detalle
             foreach (var lineDto in extractedData.Lines.OrderBy(l => l.LineNumber))
@@ -93,8 +118,8 @@ public class ProcessIncomingInvoiceCommandHandler : IProcessIncomingInvoiceComma
                     lineDto.LineNumber,
                     lineDto.Description,
                     lineDto.Quantity,
-                    new Money(lineDto.UnitPrice, extractedData.Currency),
-                    new Money(lineDto.LineTotal, extractedData.Currency));
+                    new Money(lineDto.UnitPrice, currency),
+                    new Money(lineDto.LineTotal, currency));
 
                 if (lineDto.TaxRate.HasValue)
                     line.SetTaxRate(lineDto.TaxRate);
@@ -102,7 +127,7 @@ public class ProcessIncomingInvoiceCommandHandler : IProcessIncomingInvoiceComma
                 invoice.AddLine(line);
             }
 
-            // 5. Persistir
+            // 6. Persistir
             _logger.LogDebug("Guardando factura en la base de datos...");
             await _repository.AddAsync(invoice, cancellationToken);
 
@@ -121,6 +146,16 @@ public class ProcessIncomingInvoiceCommandHandler : IProcessIncomingInvoiceComma
                 command.FilePath);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Asegura que una fecha esté en UTC para PostgreSQL.
+    /// </summary>
+    private static DateTime EnsureUtc(DateTime date)
+    {
+        return date.Kind == DateTimeKind.Utc 
+            ? date 
+            : DateTime.SpecifyKind(date, DateTimeKind.Utc);
     }
 }
 
