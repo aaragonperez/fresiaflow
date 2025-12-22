@@ -12,9 +12,6 @@ public class Money
 
     public Money(decimal value, string currency = "EUR")
     {
-        if (value < 0)
-            throw new ArgumentException("El valor no puede ser negativo.", nameof(value));
-
         if (string.IsNullOrWhiteSpace(currency))
             throw new ArgumentException("La moneda no puede estar vacía.", nameof(currency));
 

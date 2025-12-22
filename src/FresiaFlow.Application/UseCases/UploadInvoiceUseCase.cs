@@ -92,8 +92,7 @@ public class UploadInvoiceUseCase : IUploadInvoiceUseCase
             extractedData.SupplierName = "<desconocido>";
         }
 
-        if (extractedData.TotalAmount <= 0)
-            throw new InvalidOperationException("El total de la factura debe ser mayor que cero.");
+        // Ya no validamos que sea positivo, permitimos importes negativos (notas de crédito, rectificaciones, etc.)
 
         // 4. Verificar duplicados
         var existing = await _invoiceReceivedRepository.GetByInvoiceNumberAsync(extractedData.InvoiceNumber, cancellationToken);
@@ -110,14 +109,11 @@ public class UploadInvoiceUseCase : IUploadInvoiceUseCase
         // 6. Crear entidad de dominio InvoiceReceived con todos los datos
         var currency = string.IsNullOrWhiteSpace(extractedData.Currency) ? "EUR" : extractedData.Currency;
         
-        // Asegurar que los valores del OCR no sean negativos
-        var totalAmount = Math.Max(0, extractedData.TotalAmount);
-        var taxAmount = extractedData.TaxAmount.HasValue ? Math.Max(0, extractedData.TaxAmount.Value) : 0m;
+        var totalAmount = extractedData.TotalAmount;
+        var taxAmount = extractedData.TaxAmount ?? 0m;
         
         // Calcular base imponible: si no viene, calcularla restando IVA del total
-        var subtotalAmount = extractedData.SubtotalAmount.HasValue 
-            ? Math.Max(0, extractedData.SubtotalAmount.Value)
-            : Math.Max(0, totalAmount - taxAmount);
+        var subtotalAmount = extractedData.SubtotalAmount ?? (totalAmount - taxAmount);
         
         var invoice = new InvoiceReceived(
             extractedData.InvoiceNumber,
@@ -134,11 +130,11 @@ public class UploadInvoiceUseCase : IUploadInvoiceUseCase
         if (!string.IsNullOrWhiteSpace(extractedData.SupplierTaxId))
             invoice.SetSupplierTaxId(extractedData.SupplierTaxId);
 
-        if (extractedData.TaxAmount.HasValue && taxAmount > 0)
+        if (extractedData.TaxAmount.HasValue)
         {
             invoice.SetTaxAmount(new Money(taxAmount, currency));
             // Calcular tipo de IVA si tenemos base e IVA
-            if (subtotalAmount > 0)
+            if (subtotalAmount != 0)
             {
                 var taxRate = (taxAmount / subtotalAmount) * 100m;
                 invoice.SetTaxRate(taxRate);
@@ -148,7 +144,7 @@ public class UploadInvoiceUseCase : IUploadInvoiceUseCase
         // La base imponible ya se estableció en el constructor, pero si viene explícitamente la actualizamos
         if (extractedData.SubtotalAmount.HasValue)
         {
-            var explicitSubtotal = Math.Max(0, extractedData.SubtotalAmount.Value);
+            var explicitSubtotal = extractedData.SubtotalAmount.Value;
             if (explicitSubtotal != subtotalAmount)
             {
                 invoice.SetSubtotalAmount(new Money(explicitSubtotal, currency));
@@ -158,16 +154,12 @@ public class UploadInvoiceUseCase : IUploadInvoiceUseCase
         // Agregar líneas de detalle
         foreach (var lineDto in extractedData.Lines.OrderBy(l => l.LineNumber))
         {
-            // Asegurar que los valores no sean negativos (pueden venir mal del OCR)
-            var unitPrice = Math.Max(0, lineDto.UnitPrice);
-            var lineTotal = Math.Max(0, lineDto.LineTotal);
-            
             var line = new InvoiceReceivedLine(
                 lineDto.LineNumber,
                 lineDto.Description,
                 lineDto.Quantity,
-                new Money(unitPrice, currency),
-                new Money(lineTotal, currency));
+                new Money(lineDto.UnitPrice, currency),
+                new Money(lineDto.LineTotal, currency));
 
             if (lineDto.TaxRate.HasValue)
                 line.SetTaxRate(lineDto.TaxRate);

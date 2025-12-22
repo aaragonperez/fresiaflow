@@ -59,7 +59,8 @@ export class ThemeSelectorComponent {
     { label: 'Verde', value: 'green' as Theme },
     { label: 'Morado', value: 'purple' as Theme },
     { label: 'Naranja', value: 'orange' as Theme },
-    { label: 'Amarillo', value: 'yellow' as Theme }
+    { label: 'Amarillo', value: 'yellow' as Theme },
+    { label: 'Oscuro', value: 'dark' as Theme }
   ];
 
   onThemeChange(): void {

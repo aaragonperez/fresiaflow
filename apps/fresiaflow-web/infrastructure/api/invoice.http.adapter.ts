@@ -58,10 +58,70 @@ export class InvoiceHttpAdapter implements InvoiceApiPort {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await firstValueFrom(
-      this.http.post<Invoice>(`${this.baseUrl}/upload`, formData)
-    );
-    return this.mapToDomain(response);
+    try {
+      const response = await firstValueFrom(
+        this.http.post<Invoice>(`${this.baseUrl}/upload`, formData)
+      );
+      return this.mapToDomain(response);
+    } catch (error: any) {
+      // Extraer mensaje de error del backend
+      let errorMessage = 'Error al procesar la factura';
+      
+      if (error?.error?.message) {
+        errorMessage = error.error.message;
+      } else if (error?.error?.title) {
+        errorMessage = error.error.title;
+      } else if (error?.error && typeof error.error === 'string') {
+        errorMessage = error.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      // Traducir errores técnicos a mensajes amigables
+      errorMessage = this.translateErrorMessage(errorMessage, file.name);
+      
+      const uploadError = new Error(errorMessage);
+      (uploadError as any).fileName = file.name;
+      throw uploadError;
+    }
+  }
+
+  /**
+   * Traduce mensajes de error técnicos a mensajes amigables para el usuario.
+   */
+  private translateErrorMessage(errorMessage: string, fileName: string): string {
+    const translations: Record<string, string> = {
+      'El número de factura no puede estar vacío': 
+        `No se pudo detectar el número de factura en "${fileName}". Verifica que el documento sea una factura válida.`,
+      'El total de la factura debe ser mayor que cero': 
+        `No se pudo detectar el importe total en "${fileName}". Verifica que el documento sea legible.`,
+      'La moneda no puede estar vacía': 
+        `No se pudo detectar la moneda en "${fileName}".`,
+      'Error extrayendo datos de la factura': 
+        `No se pudieron extraer los datos de "${fileName}". El documento podría no ser una factura o estar ilegible.`,
+    };
+
+    // Buscar traducciones parciales
+    for (const [key, value] of Object.entries(translations)) {
+      if (errorMessage.includes(key)) {
+        return value;
+      }
+    }
+
+    // Detectar errores de factura duplicada
+    if (errorMessage.includes('Ya existe una factura con el número')) {
+      const match = errorMessage.match(/Ya existe una factura con el número (.+)/);
+      if (match) {
+        return `La factura "${match[1]}" ya existe en el sistema. No se puede duplicar.`;
+      }
+    }
+
+    // Si el error contiene información técnica, simplificarlo
+    if (errorMessage.includes('Exception') || errorMessage.includes('Error:')) {
+      return `Error al procesar "${fileName}". Por favor, verifica que el archivo sea una factura válida y vuelve a intentarlo.`;
+    }
+
+    return `${errorMessage} (${fileName})`;
   }
 
   async updateInvoice(id: string, data: UpdateInvoiceRequest): Promise<Invoice> {

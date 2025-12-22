@@ -1,6 +1,6 @@
 import { Injectable, signal, effect } from '@angular/core';
 
-export type Theme = 'light' | 'blue' | 'green' | 'purple' | 'orange' | 'yellow';
+export type Theme = 'light' | 'blue' | 'green' | 'purple' | 'orange' | 'yellow' | 'dark';
 
 export interface ThemeConfig {
   name: string;
@@ -72,6 +72,15 @@ export class ThemeService {
       textColor: '#854d0e',
       sidebarBg: '#ffffff',
       cardBg: '#ffffff'
+    },
+    dark: {
+      name: 'Oscuro',
+      primaryColor: '#6b7280',
+      secondaryColor: '#374151',
+      backgroundColor: '#111827',
+      textColor: '#f9fafb',
+      sidebarBg: '#1f2937',
+      cardBg: '#1f2937'
     }
   };
 

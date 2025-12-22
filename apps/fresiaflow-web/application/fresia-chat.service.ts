@@ -8,37 +8,44 @@ export interface ChatResponse {
   agent?: string;
 }
 
+interface InvoiceChatResponse {
+  answer: string;
+  context?: any;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FresiaChatService {
   private http = inject(HttpClient);
-  private readonly baseUrl = '/api/chat';
+  private readonly baseUrl = '/api/invoices/chat';
   
   // Historial conversacional en memoria (persistente durante la sesión)
   private messageHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
   /**
-   * Envía un mensaje al router FresiaFlow con histórico conversacional.
+   * Envía un mensaje al chat de análisis de facturas con IA.
    */
   async sendMessage(message: string): Promise<ChatResponse> {
     // Agregar mensaje del usuario al histórico
     this.messageHistory.push({ role: 'user', content: message });
 
     try {
-      // Enviar al backend con histórico
+      // Enviar al endpoint de chat de facturas
       const response = await firstValueFrom(
-        this.http.post<ChatResponse>(this.baseUrl, {
-          message: message,
-          history: this.messageHistory
+        this.http.post<InvoiceChatResponse>(this.baseUrl, {
+          question: message
         })
       );
 
       // Agregar respuesta del asistente al histórico
       this.messageHistory.push({ 
         role: 'assistant', 
-        content: response.content 
+        content: response.answer 
       });
 
-      return response;
+      return {
+        content: response.answer,
+        agent: 'Asistente de Facturas'
+      };
     } catch (error) {
       // Revertir el mensaje del usuario si hay error
       this.messageHistory.pop();

@@ -1,7 +1,7 @@
 <!-- Botón flotante para abrir el chat -->
 @if (!isOpen()) {
-  <button class="chat-toggle-btn" (click)="toggleChat()" title="Abrir chat FresiaFlow">
-    <i class="pi pi-comments"></i>
+  <button class="chat-toggle-btn" (click)="toggleChat()" title="Abrir asistente de facturas">
+    <i class="pi pi-comment"></i>
   </button>
 }
 
@@ -10,13 +10,8 @@
   <div class="chat-window">
     <div class="chat-header">
       <div class="chat-header-content">
-        <i class="pi pi-comments"></i>
-        <h3>FresiaFlow Chat</h3>
-        @if (messages().length > 0) {
-          <span class="agent-badge" *ngIf="messages()[messages().length - 1]?.agent">
-            {{ messages()[messages().length - 1].agent }}
-          </span>
-        }
+        <i class="pi pi-comment"></i>
+        <h3>Asistente de Facturas</h3>
       </div>
       <div class="chat-header-actions">
         @if (messages().length > 0) {
@@ -33,26 +28,38 @@
     <div class="chat-messages" #messagesContainer>
       @if (messages().length === 0) {
         <div class="chat-welcome">
-          <i class="pi pi-comments"></i>
-          <h4>Bienvenido a FresiaFlow</h4>
-          <p>Pregúntame sobre facturas, tareas, arquitectura, integraciones o cualquier tema relacionado con el proyecto.</p>
-          <div class="chat-examples">
-            <p><strong>Ejemplos:</strong></p>
-            <ul>
-              <li>"¿Cuánto IVA he pagado este trimestre?"</li>
-              <li>"Revisa la arquitectura de este componente"</li>
-              <li>"¿Cómo integrar con el banco?"</li>
-            </ul>
+          <div class="welcome-icon">
+            <i class="pi pi-bolt"></i>
+          </div>
+          <h4>¡Hola! Soy tu asistente</h4>
+          <p>Puedo ayudarte a analizar tus facturas y responder preguntas sobre tus datos financieros.</p>
+          <div class="suggestion-chips">
+            <button class="chip" (click)="askSuggestion('¿Qué proveedor me factura más?')">
+              ¿Qué proveedor me factura más?
+            </button>
+            <button class="chip" (click)="askSuggestion('¿Cuánto IVA he pagado este año?')">
+              ¿Cuánto IVA he pagado?
+            </button>
+            <button class="chip" (click)="askSuggestion('Dame un resumen de mis facturas')">
+              Resumen de facturas
+            </button>
+            <button class="chip" (click)="askSuggestion('¿Cuál es mi gasto mensual promedio?')">
+              Gasto mensual promedio
+            </button>
           </div>
         </div>
       }
       
       @for (message of messages(); track $index) {
         <div class="message" [class.user-message]="message.role === 'user'" [class.assistant-message]="message.role === 'assistant'">
-          <div class="message-content">
-            @if (message.role === 'assistant' && message.agent) {
-              <div class="agent-label">[{{ message.agent }}]</div>
+          <div class="message-avatar">
+            @if (message.role === 'user') {
+              <i class="pi pi-user"></i>
+            } @else {
+              <i class="pi pi-bolt"></i>
             }
+          </div>
+          <div class="message-content">
             <div class="message-text">{{ message.content }}</div>
             <div class="message-time">{{ message.timestamp | date:'HH:mm' }}</div>
           </div>
@@ -61,6 +68,9 @@
       
       @if (isLoading()) {
         <div class="message assistant-message">
+          <div class="message-avatar">
+            <i class="pi pi-bolt"></i>
+          </div>
           <div class="message-content">
             <div class="message-text typing-indicator">
               <span></span><span></span><span></span>
@@ -78,7 +88,7 @@
         [ngModel]="currentMessage()"
         (ngModelChange)="currentMessage.set($event)"
         (keydown)="onKeyPress($event)"
-        placeholder="Escribe tu mensaje..."
+        placeholder="Escribe tu pregunta aquí..."
         [disabled]="isLoading()"
       />
       <button
@@ -87,7 +97,11 @@
         [disabled]="isLoading() || !currentMessage().trim()"
         title="Enviar mensaje"
       >
-        <i class="pi pi-send"></i>
+        @if (isLoading()) {
+          <i class="pi pi-spin pi-spinner"></i>
+        } @else {
+          <i class="pi pi-send"></i>
+        }
       </button>
     </div>
   </div>

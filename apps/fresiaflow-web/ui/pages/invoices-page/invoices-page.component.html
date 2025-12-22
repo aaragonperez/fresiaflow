@@ -8,16 +8,6 @@
       </h1>
       <p class="subtitle">Gestión contable de facturas recibidas de proveedores</p>
     </div>
-    <div class="header-actions">
-      <button class="btn btn-secondary" (click)="exportToExcel()" [disabled]="loading()">
-        <i class="pi pi-file-excel"></i>
-        Exportar Excel
-      </button>
-      <button class="btn btn-secondary" (click)="showChat.set(!showChat())">
-        <i class="pi pi-comments"></i>
-        Chat IA
-      </button>
-    </div>
   </div>
 
   <!-- Estadísticas Contables - Compactas -->
@@ -158,46 +148,6 @@
   </div>
 
   <!-- Chat IA -->
-  @if (showChat()) {
-    <div class="chat-section">
-      <div class="chat-header">
-        <h3><i class="pi pi-comments"></i> Chat sobre Facturas</h3>
-        <button class="btn-close-chat" (click)="showChat.set(false)">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-      <div class="chat-container">
-        <div class="chat-examples">
-          <p><strong>Ejemplos de preguntas:</strong></p>
-          <ul>
-            <li>"¿Cuánto IVA he pagado en el segundo trimestre?"</li>
-            <li>"¿Qué proveedor me factura más?"</li>
-            <li>"Facturas pagadas en efectivo este año"</li>
-          </ul>
-        </div>
-        <div class="chat-input">
-          <input 
-            type="text" 
-            [ngModel]="chatQuestion()" 
-            (ngModelChange)="chatQuestion.set($event)"
-            (keyup.enter)="sendChatQuestion()"
-            placeholder="Haz una pregunta sobre tus facturas..."
-          />
-          <button class="btn btn-primary" (click)="sendChatQuestion()" [disabled]="loading() || !chatQuestion().trim()">
-            <i class="pi pi-send"></i>
-            Enviar
-          </button>
-        </div>
-        @if (chatAnswer()) {
-          <div class="chat-answer">
-            <strong>Respuesta:</strong>
-            <p>{{ chatAnswer() }}</p>
-          </div>
-        }
-      </div>
-    </div>
-  }
-
   @if (loading()) {
     <div class="loading-state">
       <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #dc2626;"></i>
@@ -261,6 +211,10 @@
           <span class="count-badge">{{ invoices().length }}</span>
         </div>
         <div class="section-actions">
+          <button class="btn-export" (click)="exportToExcel(); $event.stopPropagation()" [disabled]="loading()">
+            <i class="pi pi-file-excel"></i>
+            Exportar Excel
+          </button>
           <i class="collapse-icon pi" [class.pi-chevron-down]="tableCollapsed()" [class.pi-chevron-up]="!tableCollapsed()"></i>
         </div>
       </div>

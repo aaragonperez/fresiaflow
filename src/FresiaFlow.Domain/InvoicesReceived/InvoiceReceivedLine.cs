@@ -39,15 +39,6 @@ public class InvoiceReceivedLine
         
         if (string.IsNullOrWhiteSpace(description))
             throw new ArgumentException("La descripción no puede estar vacía.", nameof(description));
-        
-        if (quantity <= 0)
-            throw new ArgumentException("La cantidad debe ser positiva.", nameof(quantity));
-        
-        if (unitPrice.Value < 0)
-            throw new ArgumentException("El precio unitario no puede ser negativo.", nameof(unitPrice));
-        
-        if (lineTotal.Value < 0)
-            throw new ArgumentException("El total de línea no puede ser negativo.", nameof(lineTotal));
 
         Id = Guid.NewGuid();
         LineNumber = lineNumber;

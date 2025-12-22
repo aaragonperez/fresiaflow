@@ -40,11 +40,6 @@ export class InvoicesPageComponent implements OnInit {
   filterSupplier = signal<string>('');
   filterPaymentType = signal<string | null>(null);
 
-  // Chat
-  chatQuestion = signal<string>('');
-  chatAnswer = signal<string>('');
-  showChat = signal<boolean>(false);
-
   // Estados de colapso de secciones
   filtersCollapsed = signal<boolean>(false);
   uploadCollapsed = signal<boolean>(false);
@@ -215,23 +210,6 @@ export class InvoicesPageComponent implements OnInit {
     }
   }
 
-  /**
-   * Envía una pregunta al chat.
-   */
-  async sendChatQuestion(): Promise<void> {
-    const question = this.chatQuestion().trim();
-    if (!question) return;
-
-    try {
-      const response = await this.facade.chatAboutInvoices(question);
-      this.chatAnswer.set(response.answer);
-      this.chatQuestion.set('');
-    } catch (error) {
-      console.error('Error en el chat:', error);
-      this.chatAnswer.set('Error al procesar la pregunta. Por favor, inténtalo de nuevo.');
-    }
-  }
-
   async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
@@ -305,16 +283,37 @@ export class InvoicesPageComponent implements OnInit {
       return;
     }
 
-    try {
-      const uploadPromises = validFiles.map(file => this.facade.uploadInvoice(file));
-      await Promise.all(uploadPromises);
-      // Recargar facturas para reflejar los nuevos datos
-      await this.loadInvoices();
-    } catch (error) {
-      console.error('Error al subir una o más facturas:', error);
-    } finally {
-      (document.getElementById('fileInput') as HTMLInputElement).value = '';
+    // Procesar archivos uno a uno para capturar errores individuales
+    const errors: string[] = [];
+    let successCount = 0;
+
+    for (const file of validFiles) {
+      try {
+        await this.facade.uploadInvoice(file);
+        successCount++;
+      } catch (error: any) {
+        console.error(`Error al subir ${file.name}:`, error);
+        const errorMessage = error?.message || `Error desconocido al procesar "${file.name}"`;
+        errors.push(errorMessage);
+      }
     }
+
+    // Recargar facturas para reflejar los nuevos datos
+    await this.loadInvoices();
+
+    // Mostrar resumen de resultados
+    if (errors.length > 0) {
+      const summary = successCount > 0 
+        ? `Se subieron ${successCount} factura(s) correctamente.\n\n`
+        : '';
+      const errorDetails = errors.length === 1
+        ? `Error:\n${errors[0]}`
+        : `Se encontraron ${errors.length} errores:\n\n${errors.map((e, i) => `${i + 1}. ${e}`).join('\n\n')}`;
+      
+      alert(`${summary}${errorDetails}`);
+    }
+
+    (document.getElementById('fileInput') as HTMLInputElement).value = '';
   }
 
   async onDeleteInvoice(id: string): Promise<void> {

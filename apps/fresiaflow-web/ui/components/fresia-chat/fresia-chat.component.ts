@@ -106,6 +106,14 @@ export class FresiaChatComponent implements OnInit, AfterViewChecked {
     this.messages.set([]);
   }
 
+  /**
+   * Pregunta una sugerencia predefinida.
+   */
+  askSuggestion(question: string) {
+    this.currentMessage.set(question);
+    this.sendMessage();
+  }
+
   private scrollToBottom() {
     if (this.messagesContainer) {
       const element = this.messagesContainer.nativeElement;
