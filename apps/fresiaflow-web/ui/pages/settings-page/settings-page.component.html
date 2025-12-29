@@ -4,15 +4,33 @@
     <div class="header-content">
       <h1>
         <i class="pi pi-cog"></i>
-        Configuración
+        @if (activeSection === 'companies') {
+          Empresas Propias
+        } @else if (activeSection === 'onedrive') {
+          Sincronización OneDrive
+        } @else if (activeSection === 'invoice-sources') {
+          Fuentes de Facturas
+        } @else {
+          Contabilidad
+        }
       </h1>
-      <p class="subtitle">Gestiona la configuración de la aplicación</p>
+      <p class="subtitle">
+        @if (activeSection === 'companies') {
+          Gestiona las empresas propias de la organización
+        } @else if (activeSection === 'onedrive') {
+          Configura la sincronización automática con OneDrive
+        } @else if (activeSection === 'invoice-sources') {
+          Configura fuentes automáticas para descargar facturas
+        } @else {
+          Gestiona las cuentas contables según el Plan General Contable español
+        }
+      </p>
     </div>
   </div>
 
   @if (loading) {
     <div class="loading-state">
-      <i class="pi pi-spin pi-spinner" style="font-size: 2rem; color: #dc2626;"></i>
+      <i class="pi pi-spin pi-spinner" style="font-size: 2rem;"></i>
       <p>Cargando configuración...</p>
     </div>
   }
@@ -31,62 +49,85 @@
     </div>
   }
 
-  <!-- Configuración de Empresas Propias -->
-  <div class="card">
-    <div class="card-header">
-      <h2 class="card-title">
-        <i class="pi pi-building"></i>
-        Empresas Propias
-      </h2>
-    </div>
-    
-    <div class="card-content">
-      <p class="description">
-        Las empresas listadas aquí NO serán consideradas como proveedores al procesar facturas.
-        Si una factura tiene como proveedor alguna de estas empresas, no se procesará como factura recibida.
-      </p>
+  <!-- Sección: Empresas Propias -->
+  @if (activeSection === 'companies') {
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <i class="pi pi-building"></i>
+          Configuración de Empresas Propias
+        </h2>
+      </div>
+      
+      <div class="card-content">
+        <p class="description">
+          Las empresas listadas aquí NO serán consideradas como proveedores al procesar facturas.
+          Si una factura tiene como proveedor alguna de estas empresas, no se procesará como factura recibida.
+        </p>
 
-      <div class="add-company-section">
-        <div class="input-group">
-          <input
-            type="text"
-            [(ngModel)]="newCompanyName"
-            (keypress)="onKeyPress($event)"
-            placeholder="Nombre de la empresa"
-            class="input-field"
-          />
-          <button class="btn-add" (click)="addCompany()" [disabled]="!newCompanyName.trim()">
-            <i class="pi pi-plus"></i>
-            Agregar
+        <div class="add-company-section">
+          <div class="input-group">
+            <input
+              type="text"
+              [(ngModel)]="newCompanyName"
+              (keypress)="onKeyPress($event)"
+              placeholder="Nombre de la empresa"
+              class="input-field"
+            />
+            <button class="btn-add" (click)="addCompany()" [disabled]="!newCompanyName.trim()">
+              <i class="pi pi-plus"></i>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <div class="companies-list">
+          @if (ownCompanyNames.length === 0) {
+            <div class="empty-state">
+              <i class="pi pi-info-circle"></i>
+              <p>No hay empresas propias configuradas</p>
+            </div>
+          } @else {
+            @for (company of ownCompanyNames; track $index) {
+              <div class="company-item">
+                <span class="company-name">{{ company }}</span>
+                <button class="btn-remove" (click)="removeCompany($index)" title="Eliminar">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="actions">
+          <button class="btn-save" (click)="saveSettings()" [disabled]="loading">
+            <i class="pi pi-save"></i>
+            Guardar Configuración
           </button>
         </div>
       </div>
-
-      <div class="companies-list">
-        @if (ownCompanyNames.length === 0) {
-          <div class="empty-state">
-            <i class="pi pi-info-circle"></i>
-            <p>No hay empresas propias configuradas</p>
-          </div>
-        } @else {
-          @for (company of ownCompanyNames; track $index) {
-            <div class="company-item">
-              <span class="company-name">{{ company }}</span>
-              <button class="btn-remove" (click)="removeCompany($index)" title="Eliminar">
-                <i class="pi pi-times"></i>
-              </button>
-            </div>
-          }
-        }
-      </div>
-
-      <div class="actions">
-        <button class="btn-save" (click)="saveSettings()" [disabled]="loading">
-          <i class="pi pi-save"></i>
-          Guardar Configuración
-        </button>
-      </div>
     </div>
-  </div>
+  }
+
+  <!-- Sección: Sincronización con OneDrive -->
+  @if (activeSection === 'onedrive') {
+    <div class="card onedrive-card">
+      <app-onedrive-config />
+    </div>
+  }
+
+  <!-- Sección: Fuentes de Facturas -->
+  @if (activeSection === 'invoice-sources') {
+    <div class="card invoice-sources-card">
+      <app-invoice-sources-config />
+    </div>
+  }
+
+  <!-- Sección: Contabilidad -->
+  @if (activeSection === 'accounting') {
+    <div class="card accounting-card">
+      <app-accounting-accounts-config />
+    </div>
+  }
 </div>
 

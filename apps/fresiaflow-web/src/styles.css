@@ -346,3 +346,159 @@ button:hover {
   color: var(--text-color, #1f2937);
 }
 
+/* ============================================
+   ESTILOS GLOBALES DE DIÁLOGOS
+   ============================================ */
+
+/* Padding consistente para todos los diálogos */
+.p-dialog .p-dialog-content {
+  padding: 1.5rem 2rem !important;
+}
+
+.p-dialog .p-dialog-header {
+  padding: 1.25rem 2rem !important;
+}
+
+.p-dialog .p-dialog-footer {
+  padding: 1rem 2rem 1.5rem 2rem !important;
+  gap: 0.75rem;
+}
+
+/* ============================================
+   SECCIONES COLAPSABLES GLOBALES
+   ============================================ */
+
+.collapsible-section {
+  margin-bottom: 1.5rem;
+}
+
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: var(--card-bg, white);
+  border: 1px solid var(--secondary-color, #e5e7eb);
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.collapsible-header:hover {
+  background: var(--surface-hover, #f9fafb);
+  border-color: var(--primary-color);
+}
+
+.collapsible-header.expanded {
+  border-radius: 12px 12px 0 0;
+  border-bottom-color: transparent;
+}
+
+.collapsible-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.collapsible-header h2,
+.collapsible-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.collapsible-header i.section-icon {
+  color: var(--primary-color);
+  font-size: 1.25rem;
+}
+
+.collapsible-header .collapse-arrow {
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  transition: transform 0.3s ease;
+}
+
+.collapsible-header .collapse-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.collapsible-content {
+  background: var(--card-bg, white);
+  border: 1px solid var(--secondary-color, #e5e7eb);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  padding: 1.5rem;
+  animation: slideDownSection 0.3s ease;
+}
+
+@keyframes slideDownSection {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   TEMA NAVIDEÑO 🎄
+   Activo del 24 de Diciembre al 6 de Enero
+   ============================================ */
+
+/* Clase que se añade al body cuando el tema navideño está activo */
+body.christmas-theme {
+  /* Añadir un sutil borde superior con colores navideños */
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, #c41e3a, #1a472a, #c41e3a, #1a472a, #c41e3a) 1;
+}
+
+/* Ajustar el padding superior para la guirnalda de luces */
+body.christmas-theme .main-layout {
+  padding-top: 20px;
+}
+
+/* Efecto sutil de brillo en los headers durante Navidad */
+body.christmas-theme .page-header h1,
+body.christmas-theme .widget-title,
+body.christmas-theme .card-header h2 {
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+}
+
+/* Iconos con toque festivo */
+body.christmas-theme .pi-home::before {
+  content: "🏠";
+  font-family: inherit;
+}
+
+/* Sutil efecto de escarcha en las tarjetas */
+body.christmas-theme .p-card,
+body.christmas-theme .stat-card,
+body.christmas-theme .widget-container > div {
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 0 30px rgba(255, 255, 255, 0.3);
+}
+
+/* Botones con toque navideño */
+body.christmas-theme .p-button-success {
+  background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 100%);
+  border-color: #1a472a;
+}
+
+body.christmas-theme .p-button-success:hover {
+  background: linear-gradient(135deg, #0f2d1a 0%, #1a472a 100%);
+}
+
+/* Tags con colores navideños */
+body.christmas-theme .p-tag.p-tag-success {
+  background: #1a472a;
+}
+
+body.christmas-theme .p-tag.p-tag-danger {
+  background: #c41e3a;
+}
+

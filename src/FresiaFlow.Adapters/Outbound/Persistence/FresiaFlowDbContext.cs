@@ -3,6 +3,8 @@ using FresiaFlow.Domain.Banking;
 using FresiaFlow.Domain.Tasks;
 using FresiaFlow.Domain.Reconciliation;
 using FresiaFlow.Domain.InvoicesReceived;
+using FresiaFlow.Domain.Sync;
+using FresiaFlow.Domain.Accounting;
 using Microsoft.EntityFrameworkCore;
 
 namespace FresiaFlow.Adapters.Outbound.Persistence;
@@ -27,6 +29,13 @@ public class FresiaFlowDbContext : DbContext
     public DbSet<InvoiceReceived> InvoicesReceived { get; set; } = null!;
     public DbSet<InvoiceReceivedLine> InvoiceReceivedLines { get; set; } = null!;
     public DbSet<InvoiceReceivedPayment> InvoiceReceivedPayments { get; set; } = null!;
+    public DbSet<SyncedFile> SyncedFiles { get; set; } = null!;
+    public DbSet<OneDriveSyncConfig> OneDriveSyncConfigs { get; set; } = null!;
+    public DbSet<InvoiceSourceConfig> InvoiceSourceConfigs { get; set; } = null!;
+    public DbSet<InvoiceProcessingSnapshot> InvoiceProcessingSnapshots { get; set; } = null!;
+    public DbSet<AccountingEntry> AccountingEntries { get; set; } = null!;
+    public DbSet<AccountingEntryLine> AccountingEntryLines { get; set; } = null!;
+    public DbSet<AccountingAccount> AccountingAccounts { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -129,6 +138,92 @@ public class FresiaFlowDbContext : DbContext
                 money.Property(m => m.Value).HasColumnName("TotalAmount").HasPrecision(18, 2);
                 money.Property(m => m.Currency).HasColumnName("TotalAmountCurrency").HasMaxLength(3);
             });
+        });
+
+        // Configuración de SyncedFile
+        modelBuilder.Entity<SyncedFile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Source).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ExternalId).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.FilePath).IsRequired().HasMaxLength(2000);
+            entity.Property(e => e.FileHash).HasMaxLength(100);
+            entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
+            entity.HasIndex(e => new { e.Source, e.ExternalId }).IsUnique();
+            entity.HasIndex(e => e.FileHash);
+        });
+
+        // Configuración de OneDriveSyncConfig
+        modelBuilder.Entity<OneDriveSyncConfig>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TenantId).HasMaxLength(100);
+            entity.Property(e => e.ClientId).HasMaxLength(100);
+            entity.Property(e => e.ClientSecret).HasMaxLength(500);
+            entity.Property(e => e.FolderPath).HasMaxLength(2000);
+            entity.Property(e => e.DriveId).HasMaxLength(500);
+            entity.Property(e => e.LastSyncError).HasMaxLength(2000);
+        });
+
+        // Configuración de InvoiceSourceConfig
+        modelBuilder.Entity<InvoiceSourceConfig>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ConfigJson).IsRequired();
+            entity.Property(e => e.LastSyncError).HasMaxLength(2000);
+            entity.HasIndex(e => new { e.SourceType, e.Name });
+        });
+
+        // Configuración de AccountingAccount
+        modelBuilder.Entity<AccountingAccount>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.HasIndex(e => e.Code).IsUnique();
+        });
+
+        // Configuración de AccountingEntry
+        modelBuilder.Entity<AccountingEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.Reference).HasMaxLength(100);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+            entity.Property(e => e.EntryNumber).IsRequired(false);
+            entity.Property(e => e.EntryYear).IsRequired();
+            entity.HasIndex(e => e.EntryDate);
+            entity.HasIndex(e => e.InvoiceId);
+            entity.HasIndex(e => new { e.Status, e.Source });
+            entity.HasIndex(e => new { e.EntryYear, e.EntryNumber }); // Índice para búsqueda rápida de números
+            
+            // Relación con líneas
+            entity.HasMany(e => e.Lines)
+                  .WithOne()
+                  .HasForeignKey(l => l.AccountingEntryId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configuración de AccountingEntryLine
+        modelBuilder.Entity<AccountingEntryLine>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            
+            // Configuración de Money como value object
+            entity.OwnsOne(e => e.Amount, money =>
+            {
+                money.Property(m => m.Value).HasColumnName("Amount").HasPrecision(18, 2);
+                money.Property(m => m.Currency).HasColumnName("Currency").HasMaxLength(3);
+            });
+            
+            // Relación con cuenta contable
+            entity.HasOne<AccountingAccount>()
+                  .WithMany()
+                  .HasForeignKey(l => l.AccountingAccountId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

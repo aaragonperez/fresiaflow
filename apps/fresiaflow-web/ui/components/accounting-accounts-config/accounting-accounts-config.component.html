@@ -1,0 +1,224 @@
+<div class="accounting-accounts-config">
+  <div class="config-header">
+    <h2>
+      <i class="pi pi-calculator"></i>
+      Cuentas Contables
+    </h2>
+    <p class="description">
+      Gestiona las cuentas contables según el Plan General Contable español. Las cuentas se organizan por grupos (1-9) y deben seguir la estructura del PGC.
+    </p>
+  </div>
+
+  @if (error()) {
+    <div class="error-message">
+      <i class="pi pi-exclamation-triangle"></i>
+      {{ error() }}
+    </div>
+  }
+
+  <div class="actions-bar">
+    <button
+      pButton
+      type="button"
+      label="Nueva Cuenta"
+      icon="pi pi-plus"
+      class="p-button-sm"
+      (click)="openNewDialog()"
+    ></button>
+  </div>
+
+  <p-table
+    #dt
+    [value]="accounts()"
+    dataKey="id"
+    [paginator]="true"
+    [rows]="10"
+    [rowsPerPageOptions]="[10, 25, 50]"
+    [rowHover]="true"
+    [sortMode]="'multiple'"
+    [responsiveLayout]="'scroll'"
+    [globalFilterFields]="['code', 'name']"
+    styleClass="invoice-p-table paginator-compact"
+    [loading]="loading()"
+  >
+    <ng-template pTemplate="caption">
+      <div class="table-caption">
+        <div class="caption-left">
+          <span class="caption-title"><i class="pi pi-list"></i> Cuentas Contables</span>
+          <span class="p-input-icon-left global-filter">
+            <i class="pi pi-search"></i>
+            <input 
+              pInputText 
+              type="text" 
+              (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+              placeholder="Búsqueda global..."
+            />
+          </span>
+        </div>
+        <button
+          pButton
+          type="button"
+          class="p-button-text p-button-sm"
+          icon="pi pi-filter-slash"
+          label="Limpiar filtros"
+          (click)="dt.reset()"
+        ></button>
+      </div>
+    </ng-template>
+
+    <ng-template pTemplate="header">
+      <tr>
+        <th pSortableColumn="code">Código <p-sortIcon field="code" /></th>
+        <th pSortableColumn="name">Nombre <p-sortIcon field="name" /></th>
+        <th pSortableColumn="type">Tipo <p-sortIcon field="type" /></th>
+        <th pSortableColumn="isActive">Estado <p-sortIcon field="isActive" /></th>
+        <th class="actions-col">Acciones</th>
+      </tr>
+      <tr class="filter-row">
+        <th><input pInputText type="text" placeholder="Buscar" (input)="dt.filter($any($event.target).value, 'code', 'contains')" /></th>
+        <th><input pInputText type="text" placeholder="Buscar" (input)="dt.filter($any($event.target).value, 'name', 'contains')" /></th>
+        <th>
+          <select class="filter-select" (change)="dt.filter($any($event.target).value || null, 'type', 'equals')">
+            <option value="">Todos</option>
+            <option value="Asset">Activo</option>
+            <option value="Liability">Pasivo</option>
+            <option value="Equity">Patrimonio Neto</option>
+            <option value="Income">Ingresos</option>
+            <option value="Expense">Gastos</option>
+          </select>
+        </th>
+        <th>
+          <select class="filter-select" (change)="dt.filter($any($event.target).value || null, 'isActive', 'equals')">
+            <option value="">Todos</option>
+            <option value="true">Activa</option>
+            <option value="false">Inactiva</option>
+          </select>
+        </th>
+        <th></th>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="body" let-account>
+      <tr>
+        <td class="col-code">{{ account.code }}</td>
+        <td class="col-name">{{ account.name }}</td>
+        <td class="col-type">
+          <p-tag [value]="getAccountTypeLabel(account.type)" [severity]="getAccountTypeSeverity(account.type)"></p-tag>
+        </td>
+        <td class="col-status">
+          <p-tag [value]="account.isActive ? 'Activa' : 'Inactiva'" [severity]="account.isActive ? 'success' : 'danger'"></p-tag>
+        </td>
+        <td class="actions-col">
+          <div class="action-buttons">
+            <button
+              pButton
+              type="button"
+              class="p-button-rounded p-button-text p-button-sm"
+              icon="pi pi-pencil"
+              (click)="openEditDialog(account)"
+              title="Editar cuenta"
+            ></button>
+            <button
+              pButton
+              type="button"
+              class="p-button-rounded p-button-text p-button-sm p-button-danger"
+              icon="pi pi-trash"
+              (click)="deleteAccount(account)"
+              title="Eliminar cuenta"
+            ></button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template pTemplate="emptymessage">
+      <div class="empty-message">
+        <i class="pi pi-info-circle"></i>
+        <p>No hay cuentas contables configuradas</p>
+      </div>
+    </ng-template>
+  </p-table>
+
+  <!-- Diálogo de edición -->
+  <p-dialog
+    [visible]="editDialogVisible()"
+    [modal]="true"
+    [style]="{ width: '500px' }"
+    [closable]="true"
+    (onHide)="closeEditDialog()"
+    [header]="editingAccount() ? 'Editar Cuenta Contable' : 'Nueva Cuenta Contable'"
+  >
+    <div class="dialog-content">
+      <div class="form-group">
+        <label>Código *</label>
+        <input
+          pInputText
+          type="text"
+          [ngModel]="accountCode()"
+          (ngModelChange)="accountCode.set($event)"
+          placeholder="Ej: 600, 400, 472"
+          maxlength="50"
+        />
+        <small>Código según el Plan General Contable (PGC)</small>
+      </div>
+
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input
+          pInputText
+          type="text"
+          [ngModel]="accountName()"
+          (ngModelChange)="accountName.set($event)"
+          placeholder="Nombre de la cuenta"
+          maxlength="200"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Tipo de Cuenta *</label>
+        <p-dropdown
+          [options]="accountTypeOptions"
+          [ngModel]="accountType()"
+          (ngModelChange)="accountType.set($event)"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Seleccionar tipo"
+        ></p-dropdown>
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input
+            type="checkbox"
+            [ngModel]="isActive()"
+            (ngModelChange)="isActive.set($event)"
+          />
+          Cuenta activa
+        </label>
+        <small>Las cuentas inactivas no aparecerán en los desplegables de selección</small>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer-buttons">
+        <button
+          pButton
+          type="button"
+          label="Cancelar"
+          icon="pi pi-times"
+          class="p-button-text"
+          (click)="closeEditDialog()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Guardar"
+          icon="pi pi-check"
+          (click)="saveAccount()"
+          [disabled]="loading() || !accountCode().trim() || !accountName().trim()"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>
+

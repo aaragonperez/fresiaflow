@@ -19,8 +19,8 @@ public class InvoiceReceivedConfiguration : IEntityTypeConfiguration<InvoiceRece
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.HasIndex(i => i.InvoiceNumber)
-            .IsUnique();
+        // Índice no único para búsquedas eficientes (permite duplicados para detectar rectificaciones)
+        builder.HasIndex(i => i.InvoiceNumber);
 
         builder.Property(i => i.SupplierName)
             .IsRequired()
@@ -81,6 +81,21 @@ public class InvoiceReceivedConfiguration : IEntityTypeConfiguration<InvoiceRece
             .HasMaxLength(3);
 
         builder.Property(i => i.TaxRate)
+            .HasPrecision(5, 2);
+
+        // Configurar IRPF (retención)
+        builder.OwnsOne(i => i.IrpfAmount, money =>
+        {
+            money.Property(m => m.Value)
+                .HasColumnName("IrpfAmount")
+                .HasPrecision(18, 2);
+
+            money.Property(m => m.Currency)
+                .HasColumnName("IrpfCurrency")
+                .HasMaxLength(3);
+        });
+
+        builder.Property(i => i.IrpfRate)
             .HasPrecision(5, 2);
 
         builder.Property(i => i.PaymentType)

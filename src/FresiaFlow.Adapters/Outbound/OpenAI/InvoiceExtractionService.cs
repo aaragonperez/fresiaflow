@@ -30,13 +30,14 @@ public class InvoiceExtractionService : IInvoiceExtractionService
     }
 
     public async Task<InvoiceExtractionResultDto> ExtractInvoiceDataAsync(
-        string text, 
+        InvoiceExtractionRequest request,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogDebug("Iniciando extracción semántica de factura con OpenAI");
+        _logger.LogDebug("Iniciando extracción estructurada (highPrecision={HighPrecision})", request.UseHighPrecisionModel);
 
-        var prompt = BuildExtractionPrompt(text);
-        var response = await CallOpenAiAsync(prompt, cancellationToken);
+        var prompt = BuildExtractionPrompt(request.OcrText);
+        var model = ResolveModel(request.UseHighPrecisionModel);
+        var response = await CallOpenAiAsync(prompt, model, cancellationToken);
 
         _logger.LogDebug("Respuesta de OpenAI recibida, parseando JSON");
 
@@ -51,12 +52,33 @@ public class InvoiceExtractionService : IInvoiceExtractionService
                 throw new InvalidOperationException("OpenAI devolvió una respuesta vacía");
             }
 
+            // VALIDACIÓN DE SEGURIDAD: Asegurar que FRESIA nunca sea el proveedor
+            result = ValidateAndCorrectSupplier(result);
+
+            // Normalizar y validar el CIF/NIF del proveedor
+            result.SupplierTaxId = TaxIdNormalizer.Normalize(result.SupplierTaxId);
+
+            if (!string.IsNullOrWhiteSpace(result.SupplierTaxId))
+            {
+                _logger.LogInformation(
+                    "CIF/NIF del proveedor extraído y normalizado: {SupplierTaxId}",
+                    result.SupplierTaxId);
+            }
+            else if (string.IsNullOrWhiteSpace(result.SupplierTaxId) && !string.IsNullOrWhiteSpace(result.SupplierName))
+            {
+                _logger.LogWarning(
+                    "⚠️ No se pudo extraer el CIF/NIF del proveedor '{SupplierName}'. " +
+                    "Se recomienda revisar manualmente la factura.",
+                    result.SupplierName);
+            }
+
             _logger.LogInformation(
-                "Factura extraída: {InvoiceNumber} - {SupplierName} - {TotalAmount} {Currency}",
+                "Factura extraída: {InvoiceNumber} - {SupplierName} - {TotalAmount} {Currency} - CIF: {SupplierTaxId}",
                 result.InvoiceNumber,
                 result.SupplierName,
                 result.TotalAmount,
-                result.Currency);
+                result.Currency,
+                result.SupplierTaxId ?? "NO DISPONIBLE");
 
             return result;
         }
@@ -80,14 +102,70 @@ public class InvoiceExtractionService : IInvoiceExtractionService
             .Replace("{1}", ownCompaniesList);
     }
 
-    private async Task<string> CallOpenAiAsync(string prompt, CancellationToken cancellationToken)
+    /// <summary>
+    /// Valida y corrige el resultado de extracción para asegurar que FRESIA nunca sea el proveedor.
+    /// Esta es una capa de seguridad adicional por si el LLM comete un error.
+    /// </summary>
+    private InvoiceExtractionResultDto ValidateAndCorrectSupplier(InvoiceExtractionResultDto result)
+    {
+        if (string.IsNullOrWhiteSpace(result.SupplierName))
+        {
+            return result;
+        }
+
+        // Verificar si el supplierName contiene alguna empresa propia
+        var ownCompanies = _promptOptions.OwnCompanyNames ?? new List<string>();
+        var supplierUpper = result.SupplierName.ToUpperInvariant();
+        
+        bool isOwnCompany = ownCompanies.Any(own => 
+            supplierUpper.Contains(own.ToUpperInvariant()) ||
+            own.ToUpperInvariant().Contains(supplierUpper));
+        
+        // También verificar explícitamente "FRESIA" por si no está en la lista
+        if (!isOwnCompany && supplierUpper.Contains("FRESIA"))
+        {
+            isOwnCompany = true;
+        }
+
+        if (isOwnCompany)
+        {
+            _logger.LogWarning(
+                "⚠️ CORRECCIÓN: Se detectó empresa propia '{SupplierName}' como proveedor. " +
+                "Esto indica un error de extracción. Marcando como 'PROVEEDOR NO IDENTIFICADO'.",
+                result.SupplierName);
+            
+            // Marcar como no identificado en lugar de usar Fresia
+            result.SupplierName = "PROVEEDOR NO IDENTIFICADO - REVISAR MANUALMENTE";
+            
+            // También limpiar el TaxId si es el de Fresia (B87392700)
+            if (TaxIdNormalizer.IsFresiaTaxId(result.SupplierTaxId))
+            {
+                _logger.LogWarning("⚠️ CORRECCIÓN: Se detectó CIF de Fresia (B87392700) como proveedor. Limpiando.");
+                result.SupplierTaxId = null;
+            }
+        }
+
+        return result;
+    }
+
+    private string ResolveModel(bool useHighPrecision)
+    {
+        if (useHighPrecision && !string.IsNullOrWhiteSpace(_options.FallbackModel))
+        {
+            return _options.FallbackModel!;
+        }
+
+        return _options.Model;
+    }
+
+    private async Task<string> CallOpenAiAsync(string prompt, string model, CancellationToken cancellationToken)
     {
         var httpClient = _httpClientFactory.CreateClient("OpenAI");
         httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_options.ApiKey}");
 
         var requestBody = new
         {
-            model = _options.Model,
+            model,
             messages = new[]
             {
                 new { role = "system", content = _promptOptions.SystemMessage },
@@ -100,7 +178,7 @@ public class InvoiceExtractionService : IInvoiceExtractionService
         var jsonContent = JsonSerializer.Serialize(requestBody);
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-        _logger.LogDebug("Llamando a OpenAI API con modelo {Model}", _options.Model);
+        _logger.LogDebug("Llamando a OpenAI API con modelo {Model}", model);
 
         var response = await httpClient.PostAsync(
             "https://api.openai.com/v1/chat/completions",

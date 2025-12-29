@@ -1,12 +1,15 @@
 .invoice-table-container {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* Tabla principal */
 :host ::ng-deep .invoice-p-table .p-datatable-table {
   table-layout: fixed;
+  width: 100%;
+  min-width: 1300px;
 }
 
 :host ::ng-deep .invoice-p-table .p-datatable-thead > tr > th,
@@ -16,6 +19,99 @@
   overflow: hidden;
   padding: 0.6rem 0.5rem;
   font-size: 0.8rem;
+  vertical-align: middle;
+}
+
+/* Asegurar que headers y celdas tengan el mismo ancho */
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(1),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(1) {
+  width: 50px;
+  min-width: 50px;
+  max-width: 50px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(2),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(2) {
+  width: 110px;
+  min-width: 110px;
+  max-width: 110px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(3),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(3) {
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(4),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(4) {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(5),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(5) {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(6),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(6) {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(7),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(7) {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(8),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(8) {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(9),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(9) {
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(10),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(10) {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(11),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(11) {
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(12),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(12) {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr:first-child > th:nth-child(13),
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td:nth-child(13) {
+  width: 100px;
+  min-width: 100px;
+  max-width: 100px;
 }
 
 :host ::ng-deep .invoice-p-table .p-datatable-thead > tr > th {
@@ -24,6 +120,15 @@
   color: var(--text-color, #374151);
   letter-spacing: 0.25px;
   border-bottom: 1px solid var(--secondary-color, #e5e7eb);
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr > th.p-sortable-column:hover {
+  background-color: var(--secondary-color);
+}
+
+:host ::ng-deep .invoice-p-table .p-sortable-column-icon {
+  color: var(--primary-color);
+  margin-left: 0.25rem;
 }
 
 :host ::ng-deep .invoice-p-table .p-datatable-tbody > tr {
@@ -88,7 +193,7 @@
 }
 
 .actions-col {
-  width: 90px;
+  width: 120px;
   text-align: right;
 }
 
@@ -100,31 +205,102 @@
   font-weight: 600;
   color: var(--text-color, #1f2937);
   font-size: 0.9rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.caption-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.caption-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .table-caption i {
-  color: var(--primary-color, #dc2626);
+  color: var(--primary-color);
+}
+
+.global-filter {
+  flex: 1;
+  max-width: 300px;
+  position: relative;
+}
+
+.global-filter input {
+  width: 100%;
+  padding: 0.4rem 0.4rem 0.4rem 2.5rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--secondary-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+.global-filter input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.global-filter .pi-search {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-color, #6b7280);
+  opacity: 0.6;
+  font-size: 0.875rem;
+  pointer-events: none;
+  z-index: 1;
+  line-height: 1;
+}
+
+:host ::ng-deep .global-filter.p-input-icon-left > i:first-child {
+  left: 0.75rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: var(--text-color, #6b7280) !important;
+  opacity: 0.6 !important;
+  font-size: 0.875rem !important;
+  margin-top: 0 !important;
 }
 
 .col-number {
+  width: 130px;
+  min-width: 130px;
   max-width: 130px;
   font-weight: 600;
 }
 
 .col-supplier {
+  width: 200px;
+  min-width: 200px;
   max-width: 200px;
 }
 
 .col-taxid {
+  width: 120px;
+  min-width: 120px;
   max-width: 120px;
 }
 
 .col-date {
+  width: 100px;
+  min-width: 100px;
   max-width: 100px;
   text-align: center;
 }
 
 .col-amount {
+  width: 100px;
+  min-width: 100px;
   max-width: 100px;
   text-align: right;
 }
@@ -136,11 +312,15 @@
 }
 
 .col-currency {
+  width: 70px;
+  min-width: 70px;
   max-width: 70px;
   text-align: center;
 }
 
 .col-payment {
+  width: 110px;
+  min-width: 110px;
   max-width: 110px;
 }
 
@@ -169,6 +349,38 @@
   color: #92400e;
 }
 
+/* Columna de asiento contable */
+.col-accounting {
+  width: 90px;
+  min-width: 90px;
+  max-width: 90px;
+  text-align: center;
+}
+
+.accounting-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.accounting-badge .pi {
+  font-size: 0.75rem;
+}
+
+.accounting-badge.has-entry {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.accounting-badge.no-entry {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 /* Botón de expandir líneas */
 .toggle-lines {
   justify-content: center;
@@ -194,6 +406,11 @@
 
 :host ::ng-deep .action-buttons .p-button .pi {
   font-size: 0.8rem;
+}
+
+:host ::ng-deep .action-buttons .p-button:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
 }
 
 /* Fila de filtros */

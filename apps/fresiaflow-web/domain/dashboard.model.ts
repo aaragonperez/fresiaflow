@@ -44,6 +44,7 @@ export interface DashboardTask {
   type: DashboardTaskType;
   priority: TaskPriority;
   status: TaskStatus;
+  isPinned: boolean;
   dueDate?: Date;
   createdAt: Date;
   updatedAt: Date;

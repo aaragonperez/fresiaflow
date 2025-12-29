@@ -1,0 +1,1044 @@
+.onedrive-config {
+  padding: 1.5rem;
+}
+
+.config-header {
+  margin-bottom: 2rem;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.header-title i {
+  font-size: 1.75rem;
+  color: var(--primary-color, #0078d4);
+}
+
+.header-title h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-color);
+}
+
+.header-description {
+  color: var(--text-color);
+  opacity: 0.7;
+  margin: 0;
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+}
+
+.loading-container p {
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+/* Status Card */
+.status-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--secondary-color);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.status-card.enabled {
+  border-color: #16a34a;
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.1), rgba(22, 163, 74, 0.05));
+}
+
+.status-card.disabled {
+  border-color: #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+}
+
+.status-icon {
+  font-size: 2.5rem;
+}
+
+.status-card.enabled .status-icon {
+  color: #16a34a;
+}
+
+.status-card.disabled .status-icon {
+  color: #f59e0b;
+}
+
+.status-info {
+  flex: 1;
+}
+
+.status-info h3 {
+  margin: 0 0 0.25rem 0;
+  color: var(--text-color);
+  font-size: 1.1rem;
+}
+
+.status-info p {
+  margin: 0;
+  color: var(--text-color);
+  opacity: 0.7;
+  font-size: 0.875rem;
+}
+
+.status-info .error-text {
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.status-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+/* Collapsible Sections */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.section-header:hover {
+  opacity: 0.8;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.section-title h3 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.section-title i {
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
+.collapse-icon {
+  color: var(--primary-color);
+  font-size: 1.25rem;
+  transition: transform 0.3s ease;
+}
+
+.collapse-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.section-content {
+  animation: slideDown 0.3s ease;
+  overflow: hidden;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Form */
+.config-form {
+  background: var(--card-bg);
+  border: 1px solid var(--secondary-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.form-hint {
+  color: var(--text-color);
+  opacity: 0.7;
+  font-size: 0.875rem;
+  margin: 0 0 1.5rem 0;
+}
+
+.form-hint a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.form-hint a:hover {
+  text-decoration: underline;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.form-group label i {
+  color: var(--primary-color);
+  font-size: 0.875rem;
+}
+
+.form-group label .required {
+  color: #dc2626;
+}
+
+.form-group label .saved-indicator {
+  color: #16a34a;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(22, 163, 74, 0.1);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.form-group input {
+  width: 100%;
+}
+
+.form-group small {
+  color: var(--text-color);
+  opacity: 0.6;
+  font-size: 0.75rem;
+}
+
+.form-group .hint-text {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--primary-color);
+  opacity: 0.9;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  border-radius: 6px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.form-group .hint-text i {
+  font-size: 0.8rem;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+  border-top: 1px solid var(--secondary-color);
+  margin-top: 1rem;
+}
+
+.enable-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.enable-switch label {
+  font-size: 0.875rem;
+  color: var(--text-color);
+}
+
+/* Sync Section */
+.sync-section {
+  background: var(--card-bg);
+  border: 1px solid var(--secondary-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.sync-options {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--secondary-color);
+  border-radius: 8px;
+}
+
+.force-reprocess-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.option-label {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.label-text {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+
+.label-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: var(--text-color);
+  opacity: 0.7;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 0.5rem;
+  background: color-mix(in srgb, var(--primary-color) 5%, transparent);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 4px;
+}
+
+.label-hint i {
+  color: var(--primary-color);
+  font-size: 0.9rem;
+  margin-top: 0.1rem;
+}
+
+.sync-actions {
+  margin-bottom: 1rem;
+}
+
+/* Sync progress */
+.sync-progress-container {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border: 2px solid var(--primary-color);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.progress-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
+.progress-status i {
+  font-size: 1.2rem;
+}
+
+.progress-count {
+  font-weight: 500;
+  color: var(--text-color);
+  opacity: 0.8;
+}
+
+.current-file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--secondary-color);
+  border-radius: 6px;
+  color: var(--text-color);
+  font-size: 0.875rem;
+}
+
+.current-file i {
+  color: var(--primary-color);
+}
+
+.sync-message {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 4px;
+  color: var(--text-color);
+  font-size: 0.875rem;
+}
+
+:host ::ng-deep .sync-progress-container .p-progressbar {
+  border-radius: 12px;
+  background: var(--secondary-color);
+}
+
+:host ::ng-deep .sync-progress-container .p-progressbar .p-progressbar-value {
+  background: var(--primary-color);
+  border-radius: 12px;
+}
+
+:host ::ng-deep .sync-progress-container .p-progressbar .p-progressbar-label {
+  color: white;
+  font-weight: 600;
+}
+
+/* Files Section */
+.files-section {
+  background: var(--card-bg);
+  border: 1px solid var(--secondary-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Estilos de tabla sync-history (igual que invoice-table) */
+:host ::ng-deep .sync-history-table .p-datatable-table {
+  table-layout: fixed;
+}
+
+:host ::ng-deep .sync-history-table .p-datatable-thead > tr > th,
+:host ::ng-deep .sync-history-table .p-datatable-tbody > tr > td {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  padding: 0.6rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+:host ::ng-deep .sync-history-table .p-datatable-thead > tr > th {
+  background-color: var(--background-color);
+  font-weight: 600;
+  color: var(--text-color);
+  letter-spacing: 0.25px;
+  border-bottom: 1px solid var(--secondary-color);
+}
+
+:host ::ng-deep .sync-history-table .p-datatable-thead > tr > th.p-sortable-column:hover {
+  background-color: var(--secondary-color);
+}
+
+:host ::ng-deep .sync-history-table .p-sortable-column-icon {
+  color: var(--primary-color);
+  margin-left: 0.25rem;
+}
+
+:host ::ng-deep .sync-history-table .p-datatable-tbody > tr {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+}
+
+:host ::ng-deep .sync-history-table .p-datatable-tbody > tr:hover {
+  background-color: var(--secondary-color);
+}
+
+/* Caption/Toolbar */
+.table-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.caption-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.caption-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.table-caption i {
+  color: var(--primary-color);
+}
+
+.global-filter {
+  flex: 1;
+  max-width: 300px;
+}
+
+.global-filter input {
+  width: 100%;
+  padding: 0.4rem 0.4rem 0.4rem 2.5rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--secondary-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+.global-filter input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.global-filter .pi-search {
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+/* Fila de filtros */
+.filter-row th {
+  padding: 0.35rem 0.4rem !important;
+}
+
+.filter-row input,
+.filter-row select {
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--secondary-color);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+.filter-row input:focus,
+.filter-row select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.filter-row input[type="date"] {
+  width: 100%;
+}
+
+.filter-select {
+  height: 26px;
+  cursor: pointer;
+}
+
+/* Paginador */
+:host ::ng-deep .sync-history-table .p-paginator {
+  padding: 0.5rem 0.75rem;
+  background: var(--background-color);
+  border-top: 1px solid var(--secondary-color);
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+:host ::ng-deep .sync-history-table .p-paginator .p-paginator-element {
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  margin: 0 1px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background: var(--card-bg);
+  border: 1px solid var(--secondary-color);
+  color: var(--text-color);
+}
+
+:host ::ng-deep .sync-history-table .p-paginator .p-paginator-element:hover {
+  background: var(--secondary-color);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+:host ::ng-deep .sync-history-table .p-paginator .p-paginator-element.p-highlight {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+:host ::ng-deep .sync-history-table .p-paginator .p-dropdown {
+  height: 28px;
+  border: 1px solid var(--secondary-color);
+  border-radius: 4px;
+  background: var(--card-bg);
+}
+
+:host ::ng-deep .sync-history-table .p-paginator .p-dropdown .p-dropdown-label {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-color);
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.file-info i {
+  color: var(--primary-color);
+  font-size: 0.9rem;
+}
+
+.file-name {
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Columna de acciones */
+.actions-col {
+  width: 90px;
+  text-align: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+:host ::ng-deep .action-buttons .p-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+:host ::ng-deep .action-buttons .p-button .pi {
+  font-size: 0.8rem;
+}
+
+:host ::ng-deep .action-buttons .p-button:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+}
+
+:host ::ng-deep .action-buttons .p-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-color);
+  opacity: 0.6;
+}
+
+.empty-message i {
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-color);
+  opacity: 0.6;
+}
+
+.empty-state i {
+  display: block;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/* Instructions */
+.instructions {
+  background: var(--card-bg);
+  border: 1px solid var(--secondary-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.instructions ol {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: var(--text-color);
+}
+
+.instructions li {
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.instructions a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.instructions a:hover {
+  text-decoration: underline;
+}
+
+.instructions ul {
+  margin: 0.5rem 0;
+  padding-left: 1rem;
+}
+
+.instructions code {
+  background: var(--secondary-color);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
+/* PrimeNG Overrides */
+::ng-deep .onedrive-config .p-inputtext,
+::ng-deep .onedrive-config .p-inputnumber-input {
+  background: var(--background-color);
+  border-color: var(--secondary-color);
+  color: var(--text-color);
+}
+
+::ng-deep .onedrive-config .p-inputtext:focus,
+::ng-deep .onedrive-config .p-inputnumber-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+::ng-deep .onedrive-config .p-inputswitch.p-inputswitch-checked .p-inputswitch-slider {
+  background: var(--primary-color);
+}
+
+::ng-deep .onedrive-config .p-message {
+  margin-top: 1rem;
+}
+
+/* Input Number compacto para intervalo de sincronización */
+::ng-deep .onedrive-config .p-inputnumber {
+  width: 140px;
+}
+
+::ng-deep .onedrive-config .p-inputnumber .p-inputnumber-input {
+  width: 80px;
+  text-align: center;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+::ng-deep .onedrive-config .p-inputnumber .p-inputnumber-button {
+  width: 28px;
+  padding: 0;
+}
+
+::ng-deep .onedrive-config .p-inputnumber .p-inputnumber-button .p-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+::ng-deep .onedrive-config .p-inputnumber .p-inputnumber-button-group {
+  width: 28px;
+}
+
+::ng-deep .onedrive-config .p-inputnumber .p-inputnumber-button-group .p-inputnumber-button {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .status-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .status-stats {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .enable-switch {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+}
+
+/* Acciones de sincronización */
+.sync-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.sync-actions button {
+  flex: 0 1 auto;
+}
+
+:host ::ng-deep .sync-actions .p-button-danger {
+  margin-left: auto;
+}
+
+:host ::ng-deep .sync-actions .p-button-danger:hover {
+  background: #991b1b !important;
+  border-color: #991b1b !important;
+}
+
+:host ::ng-deep .sync-actions .p-button-warning {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+
+:host ::ng-deep .sync-actions .p-button-warning:hover {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+}
+
+/* Íconos de estado de sincronización */
+.progress-header i.pi-check-circle {
+  color: #16a34a; /* Verde para completado */
+}
+
+.progress-header i.pi-times-circle {
+  color: #f59e0b; /* Naranja para cancelado */
+}
+
+/* Validation hint */
+.validation-hint {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--blue-50);
+  border: 1px solid var(--blue-200);
+  border-radius: 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.validation-hint i {
+  color: var(--blue-500);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.validation-hint p {
+  margin: 0;
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.validation-hint strong {
+  color: var(--primary-color);
+}
+
+/* Danger Zone */
+.danger-header {
+  border-color: var(--red-300);
+  background: var(--red-50);
+}
+
+.danger-header .section-title i {
+  color: var(--red-500);
+}
+
+.danger-header .section-title h3 {
+  color: var(--red-700);
+}
+
+.danger-zone {
+  background: var(--red-50);
+  border: 1px solid var(--red-200);
+  border-radius: 0 0 8px 8px;
+  margin-top: -1px;
+}
+
+.danger-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--red-100);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.danger-warning i {
+  color: var(--red-500);
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.danger-warning p {
+  margin: 0;
+  color: var(--red-700);
+  line-height: 1.5;
+}
+
+.danger-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid var(--red-200);
+}
+
+.danger-action-info h4 {
+  margin: 0 0 0.25rem 0;
+  color: var(--red-700);
+  font-size: 1rem;
+}
+
+.danger-action-info p {
+  margin: 0;
+  color: var(--text-color-secondary);
+  font-size: 0.875rem;
+}
+
+/* Clear Database Dialog */
+:host ::ng-deep .clear-db-dialog .p-dialog-content {
+  padding: 1.5rem 2rem !important;
+}
+
+:host ::ng-deep .clear-db-dialog .p-dialog-footer {
+  padding: 1rem 2rem 1.5rem 2rem !important;
+  gap: 0.75rem;
+}
+
+.clear-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.clear-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--red-50);
+  border: 1px solid var(--red-200);
+  border-radius: 8px;
+}
+
+.clear-warning i {
+  color: var(--red-500);
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.warning-text {
+  flex: 1;
+}
+
+.warning-text p {
+  margin: 0 0 0.75rem 0;
+  color: var(--red-700);
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.warning-text ul {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+  color: var(--red-600);
+}
+
+.warning-text li {
+  margin-bottom: 0.35rem;
+  line-height: 1.4;
+}
+
+.warning-text .no-undo {
+  margin-top: 1rem;
+  color: var(--red-600);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.confirm-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.confirm-input label {
+  color: var(--text-color);
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.confirm-input code {
+  background: var(--red-100);
+  color: var(--red-700);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.confirm-input input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+}

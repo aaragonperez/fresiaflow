@@ -1,0 +1,696 @@
+<div class="import-page">
+  <div class="page-header">
+    <h1><i class="pi pi-download"></i> Importación de Facturas</h1>
+    <p class="page-description">Sincroniza y gestiona la importación de facturas desde todas las fuentes configuradas</p>
+  </div>
+
+  @if (sourcesLoading()) {
+    <div class="loading-container">
+      <p-progressSpinner strokeWidth="4" />
+      <p>Cargando fuentes...</p>
+    </div>
+  } @else {
+    <!-- Sincronización Manual -->
+    <div class="collapsible-section">
+      <div class="collapsible-header" [class.expanded]="syncSectionExpanded()" (click)="toggleSyncSection()">
+        <div class="collapsible-header-left">
+          <i class="pi pi-refresh section-icon"></i>
+          <h2>Sincronización Manual</h2>
+        </div>
+        <i class="pi pi-chevron-down collapse-arrow" [class.rotated]="syncSectionExpanded()"></i>
+      </div>
+
+      @if (syncSectionExpanded()) {
+        <div class="collapsible-content">
+          <div class="sync-content">
+            <!-- Opciones globales -->
+            <div class="sync-options">
+              <div class="option-item">
+                <p-inputSwitch
+                  id="forceReprocess"
+                  [ngModel]="forceReprocess()" 
+                  (ngModelChange)="forceReprocess.set($event)"
+                  [disabled]="!!syncingSourceId()"
+                />
+                <label for="forceReprocess" class="option-label">
+                  <span class="label-text">Forzar reproceso con IA</span>
+                  <small class="label-hint">
+                    <i class="pi pi-info-circle"></i>
+                    Si está activado, todos los archivos (incluso los ya procesados) se volverán a analizar con IA. Útil si has mejorado los prompts o quieres actualizar datos extraídos.
+                  </small>
+                </label>
+              </div>
+            </div>
+
+            <!-- Botón sincronizar todas las fuentes -->
+            <div class="sync-actions">
+              <button 
+                pButton 
+                type="button" 
+                label="Sincronizar Todas las Fuentes" 
+                icon="pi pi-refresh"
+                class="p-button-success"
+                [loading]="!!syncingSourceId()"
+                [disabled]="!!syncingSourceId() || sources().length === 0"
+                (click)="syncNow()"
+                pTooltip="Sincronizar todas las fuentes habilitadas"
+              ></button>
+            </div>
+
+            <!-- Resultado de sincronización global -->
+            @if (syncResult()) {
+              <p-message 
+                [severity]="syncResult()!.success ? 'success' : 'error'"
+                [text]="syncResult()!.message"
+              ></p-message>
+            }
+
+            <!-- Lista de fuentes con sincronización individual -->
+            @if (sources().length > 0) {
+              <div class="sources-list">
+                <h3>Fuentes Configuradas</h3>
+                <div class="sources-grid">
+                  @for (source of sources(); track source.id) {
+                    <div class="source-card">
+                      <div class="source-header">
+                        <div class="source-info">
+                          <i [class]="'pi ' + getSourceTypeIcon(source.sourceType)"></i>
+                          <div>
+                            <h4>{{ source.name }}</h4>
+                            <span class="source-type">{{ getSourceTypeLabel(source.sourceType) }}</span>
+                          </div>
+                        </div>
+                        <p-tag 
+                          [value]="source.enabled ? 'Habilitada' : 'Deshabilitada'" 
+                          [severity]="source.enabled ? 'success' : 'warning'" 
+                        />
+                      </div>
+                      
+                      <div class="source-stats">
+                        <div class="stat-item">
+                          <span class="stat-label">Archivos sincronizados:</span>
+                          <span class="stat-value">{{ source.totalFilesSynced || 0 }}</span>
+                        </div>
+                        <div class="stat-item">
+                          <span class="stat-label">Última sincronización:</span>
+                          <span class="stat-value">{{ source.lastSyncAt ? (source.lastSyncAt | date: 'short') : 'Nunca' }}</span>
+                        </div>
+                        @if (source.lastSyncError) {
+                          <div class="stat-item error">
+                            <span class="stat-label">Último error:</span>
+                            <span class="stat-value" [title]="source.lastSyncError">{{ source.lastSyncError.length > 50 ? (source.lastSyncError.substring(0, 50) + '...') : source.lastSyncError }}</span>
+                          </div>
+                        }
+                      </div>
+                      
+                      <div class="source-actions">
+                        <button 
+                          pButton 
+                          type="button" 
+                          [label]="syncingSourceId() === source.id ? 'Sincronizando...' : 'Sincronizar'" 
+                          icon="pi pi-refresh"
+                          class="p-button-sm"
+                          [loading]="syncingSourceId() === source.id"
+                          [disabled]="!source.enabled || (!!syncingSourceId() && syncingSourceId() !== source.id)"
+                          (click)="syncSource(source)"
+                          [pTooltip]="!source.enabled ? 'La fuente está deshabilitada' : 'Sincronizar esta fuente'"
+                        ></button>
+                      </div>
+                      
+                      @if (syncResults()[source.id]) {
+                        <div class="source-result">
+                          <p-message 
+                            [severity]="syncResults()[source.id].success ? 'success' : 'error'"
+                            [text]="syncResults()[source.id].success 
+                              ? ('✓ ' + syncResults()[source.id].processedCount + ' procesados' + 
+                                 (syncResults()[source.id].failedCount > 0 ? ', ' + syncResults()[source.id].failedCount + ' fallidos' : '') +
+                                 (syncResults()[source.id].skippedCount > 0 ? ', ' + syncResults()[source.id].skippedCount + ' omitidos' : ''))
+                              : ('✗ ' + (syncResults()[source.id].errorMessage || 'Error durante la sincronización'))"
+                          ></p-message>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            } @else {
+              <p-message 
+                severity="info" 
+                text="No hay fuentes configuradas. Ve a Configuración > Fuentes de Descarga para configurar fuentes."
+              ></p-message>
+            }
+
+            <!-- Progreso en tiempo real (para todas las fuentes) -->
+            @if (syncStatus() === 'syncing' || syncStatus() === 'completed' || syncStatus() === 'paused' || syncInitializing()) {
+              <div class="sync-progress">
+                @if (syncStatus() === 'paused' && syncMessage() && (syncMessage().includes('token') || syncMessage().includes('autenticación') || syncMessage().includes('authentication'))) {
+                  <p-message 
+                    severity="error" 
+                    [text]="syncMessage()"
+                    [closable]="false"
+                    styleClass="token-error-message"
+                  ></p-message>
+                }
+                
+                <!-- Información de la fuente -->
+                @if (currentSyncSourceName() || currentSyncSourceType()) {
+                  <div class="sync-source-info">
+                    <i [class]="'pi ' + getSourceTypeIcon(currentSyncSourceType() || '')"></i>
+                    <span class="source-name">{{ currentSyncSourceName() || getSourceTypeLabel(currentSyncSourceType() || '') }}</span>
+                    @if (currentSyncStage()) {
+                      <span class="sync-stage">• {{ getStageLabel(currentSyncStage()!) }}</span>
+                    }
+                  </div>
+                }
+                
+                <div class="progress-header">
+                  <span class="progress-status">
+                    <i [class]="syncInitializing() ? 'pi pi-spin pi-spinner' : syncStatus() === 'syncing' ? 'pi pi-spin pi-spinner' : syncStatus() === 'paused' ? 'pi pi-pause' : 'pi pi-check-circle'"></i>
+                    @if (syncInitializing()) {
+                      Iniciando sincronización...
+                    } @else {
+                      {{ syncStatus() === 'syncing' ? 'Sincronizando...' : syncStatus() === 'paused' ? 'Pausado' : syncStatus() === 'completed' ? 'Completado' : 'En progreso' }}
+                    }
+                  </span>
+                  @if (!syncInitializing() && syncTotalCount() > 0) {
+                    <span class="progress-count">
+                      {{ syncProcessedFiles() + syncFailedFiles() + syncSkippedFiles() + syncAlreadyExistedFiles() }} / {{ syncTotalCount() }} archivos
+                    </span>
+                  }
+                </div>
+                
+                @if (syncInitializing()) {
+                  <div class="initializing-progress">
+                    <p-progressBar 
+                      [value]="0" 
+                      [showValue]="false"
+                      [style]="{'height': '24px'}"
+                      [indeterminate]="true"
+                    ></p-progressBar>
+                    <p class="initializing-message">{{ syncMessage() || 'Conectando con el servidor...' }}</p>
+                  </div>
+                } @else {
+                  <p-progressBar 
+                    [value]="syncProgress()" 
+                    [showValue]="true"
+                    [style]="{'height': '24px'}"
+                  ></p-progressBar>
+                }
+                
+                <!-- Estadísticas detalladas en tiempo real -->
+                @if ((syncStatus() === 'syncing' || syncStatus() === 'completed') && !syncInitializing()) {
+                  <div class="sync-stats-detail">
+                    @if (syncProcessedFiles() > 0) {
+                      <div class="stat-detail-item success">
+                        <i class="pi pi-check-circle"></i>
+                        <span>Procesados: {{ syncProcessedFiles() }}</span>
+                      </div>
+                    }
+                    @if (syncFailedFiles() > 0) {
+                      <div class="stat-detail-item error">
+                        <i class="pi pi-times-circle"></i>
+                        <span>Fallidos: {{ syncFailedFiles() }}</span>
+                      </div>
+                    }
+                    @if (syncSkippedFiles() > 0) {
+                      <div class="stat-detail-item warning">
+                        <i class="pi pi-minus-circle"></i>
+                        <span>Omitidos: {{ syncSkippedFiles() }}</span>
+                      </div>
+                    }
+                    @if (syncAlreadyExistedFiles() > 0) {
+                      <div class="stat-detail-item info">
+                        <i class="pi pi-info-circle"></i>
+                        <span>Ya existían: {{ syncAlreadyExistedFiles() }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+                
+                <!-- Archivo actual -->
+                @if (syncCurrentFile() && !syncInitializing()) {
+                  <div class="current-file">
+                    <i [class]="'pi ' + getFileStatusIcon(currentFileStatus())"></i>
+                    <div class="file-info">
+                      <span class="file-name">{{ syncCurrentFile() }}</span>
+                      @if (currentFileStatus()) {
+                        <span class="file-status">{{ getFileStatusLabel(currentFileStatus()!) }}</span>
+                      }
+                      @if (currentFileSize()) {
+                        <span class="file-size">{{ (currentFileSize()! / 1024) | number: '1.0-1' }} KB</span>
+                      }
+                    </div>
+                  </div>
+                }
+                
+                <!-- Error del archivo actual -->
+                @if (currentFileError()) {
+                  <div class="current-file-error">
+                    <i class="pi pi-exclamation-triangle"></i>
+                    <span>{{ currentFileError() }}</span>
+                  </div>
+                }
+                
+                @if (syncMessage()) {
+                  <small class="sync-message">{{ syncMessage() }}</small>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Preview de OneDrive (solo si está configurado) -->
+    @if (config()?.configured) {
+      <div class="collapsible-section">
+        <div class="collapsible-header" [class.expanded]="previewSectionExpanded()" (click)="togglePreviewSection()">
+          <div class="collapsible-header-left">
+            <i class="pi pi-eye section-icon"></i>
+            <h2>Archivos en OneDrive</h2>
+          </div>
+          <div class="collapsible-header-right">
+            <button 
+              pButton 
+              type="button" 
+              icon="pi pi-refresh"
+              class="p-button-text p-button-sm"
+              [loading]="loadingPreview()"
+              (click)="loadSyncPreview(); $event.stopPropagation()"
+              pTooltip="Actualizar preview"
+            ></button>
+            <i class="pi pi-chevron-down collapse-arrow" [class.rotated]="previewSectionExpanded()"></i>
+          </div>
+        </div>
+
+        @if (previewSectionExpanded()) {
+          <div class="collapsible-content">
+            @if (loadingPreview()) {
+              <div class="preview-loading">
+                <i class="pi pi-spin pi-spinner"></i>
+                <span>Analizando archivos en OneDrive...</span>
+              </div>
+            } @else if (syncPreview()?.errorMessage) {
+              <p-message severity="error" [text]="syncPreview()!.errorMessage!"></p-message>
+            } @else if (syncPreview()) {
+              <div class="preview-content">
+                <div class="preview-summary">
+                  <div class="preview-stat">
+                    <span class="preview-number">{{ syncPreview()!.totalFiles }}</span>
+                    <span class="preview-label">Total archivos</span>
+                  </div>
+                  <div class="preview-stat supported">
+                    <span class="preview-number">{{ syncPreview()!.supportedFiles }}</span>
+                    <span class="preview-label">Soportados</span>
+                  </div>
+                  <div class="preview-stat pending">
+                    <span class="preview-number">{{ syncPreview()!.pendingToProcess }}</span>
+                    <span class="preview-label">Pendientes</span>
+                  </div>
+                  <div class="preview-stat synced">
+                    <span class="preview-number">{{ syncPreview()!.alreadySynced }}</span>
+                    <span class="preview-label">Ya sincronizados</span>
+                  </div>
+                  <div class="preview-stat exists">
+                    <span class="preview-number">{{ syncPreview()!.alreadyExistsInDb }}</span>
+                    <span class="preview-label">Ya en BD</span>
+                  </div>
+                  <div class="preview-stat unsupported">
+                    <span class="preview-number">{{ syncPreview()!.unsupportedFiles }}</span>
+                    <span class="preview-label">No soportados</span>
+                  </div>
+                </div>
+
+                @if (syncPreview()!.filesByExtension) {
+                  <div class="preview-by-type">
+                    <h4><i class="pi pi-list"></i> Archivos por tipo:</h4>
+                    <div class="type-chips">
+                      @for (entry of syncPreview()!.filesByExtension | keyvalue; track entry.key) {
+                        <span class="type-chip" [class.unsupported]="syncPreview()!.unsupportedExtensions?.includes(entry.key)">
+                          <span class="type-ext">{{ entry.key }}</span>
+                          <span class="type-count">{{ entry.value }}</span>
+                        </span>
+                      }
+                    </div>
+                  </div>
+                }
+
+                @if (syncPreview()!.unsupportedExtensions && syncPreview()!.unsupportedExtensions.length > 0) {
+                  <div class="preview-warning">
+                    <i class="pi pi-info-circle"></i>
+                    <span>Los archivos con extensiones {{ syncPreview()!.unsupportedExtensions.join(', ') }} no se procesarán (solo PDF, JPG, PNG, GIF, WEBP).</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Estadísticas del historial -->
+    <div class="collapsible-section">
+      <div class="collapsible-header" [class.expanded]="statsSectionExpanded()" (click)="toggleStatsSection()">
+        <div class="collapsible-header-left">
+          <i class="pi pi-chart-bar section-icon"></i>
+          <h2>Estadísticas</h2>
+        </div>
+        <i class="pi pi-chevron-down collapse-arrow" [class.rotated]="statsSectionExpanded()"></i>
+      </div>
+
+      @if (statsSectionExpanded()) {
+        <div class="collapsible-content">
+          <!-- Estadísticas globales -->
+          <div class="stats-section">
+            <h3>Estadísticas Globales</h3>
+            <div class="stats-grid">
+              <p-card styleClass="stat-card">
+                <ng-template pTemplate="header">
+                  <div class="stat-header">
+                    <i class="pi pi-folder stat-icon"></i>
+                    <span>Total Detectados</span>
+                  </div>
+                </ng-template>
+                <div class="stat-value">{{ syncedFiles().length }}</div>
+              </p-card>
+
+              <p-card styleClass="stat-card">
+                <ng-template pTemplate="header">
+                  <div class="stat-header">
+                    <i class="pi pi-check-circle stat-icon stat-success"></i>
+                    <span>Cargados</span>
+                  </div>
+                </ng-template>
+                <div class="stat-value stat-success-text">{{ statsCompleted() }}</div>
+              </p-card>
+
+              <p-card styleClass="stat-card">
+                <ng-template pTemplate="header">
+                  <div class="stat-header">
+                    <i class="pi pi-minus-circle stat-icon stat-warning"></i>
+                    <span>Omitidos</span>
+                  </div>
+                </ng-template>
+                <div class="stat-value stat-warning-text">{{ statsSkipped() }}</div>
+              </p-card>
+
+              <p-card styleClass="stat-card">
+                <ng-template pTemplate="header">
+                  <div class="stat-header">
+                    <i class="pi pi-times-circle stat-icon stat-error"></i>
+                    <span>Errores</span>
+                  </div>
+                </ng-template>
+                <div class="stat-value stat-error-text">{{ statsFailed() }}</div>
+              </p-card>
+
+              <p-card styleClass="stat-card">
+                <ng-template pTemplate="header">
+                  <div class="stat-header">
+                    <i class="pi pi-file stat-icon"></i>
+                    <span>Con Factura</span>
+                  </div>
+                </ng-template>
+                <div class="stat-value">{{ statsWithInvoice() }}</div>
+              </p-card>
+            </div>
+          </div>
+
+          <!-- Estadísticas por fuente -->
+          @if (sources().length > 0) {
+            <div class="stats-section">
+              <h3>Estadísticas por Fuente</h3>
+              <div class="source-stats-grid">
+                @for (source of sources(); track source.id) {
+                  @if (getSourceStats(source.id).total > 0) {
+                    <p-card styleClass="source-stat-card">
+                      <ng-template pTemplate="header">
+                        <div class="source-stat-header">
+                          <i [class]="'pi ' + getSourceTypeIcon(source.sourceType)"></i>
+                          <span>{{ source.name }}</span>
+                        </div>
+                      </ng-template>
+                      <div class="source-stat-content">
+                        <div class="source-stat-row">
+                          <span class="source-stat-label">Total:</span>
+                          <span class="source-stat-value">{{ getSourceStats(source.id).total }}</span>
+                        </div>
+                        <div class="source-stat-row">
+                          <span class="source-stat-label">Completados:</span>
+                          <span class="source-stat-value stat-success-text">{{ getSourceStats(source.id).completed }}</span>
+                        </div>
+                        <div class="source-stat-row">
+                          <span class="source-stat-label">Fallidos:</span>
+                          <span class="source-stat-value stat-error-text">{{ getSourceStats(source.id).failed }}</span>
+                        </div>
+                        <div class="source-stat-row">
+                          <span class="source-stat-label">Omitidos:</span>
+                          <span class="source-stat-value stat-warning-text">{{ getSourceStats(source.id).skipped }}</span>
+                        </div>
+                        <div class="source-stat-row">
+                          <span class="source-stat-label">Con factura:</span>
+                          <span class="source-stat-value">{{ getSourceStats(source.id).withInvoice }}</span>
+                        </div>
+                      </div>
+                    </p-card>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Historial de archivos -->
+    <div class="collapsible-section">
+      <div class="collapsible-header" [class.expanded]="historySectionExpanded()" (click)="toggleHistorySection()">
+        <div class="collapsible-header-left">
+          <i class="pi pi-list section-icon"></i>
+          <h2>Historial de Importación</h2>
+        </div>
+        <i class="pi pi-chevron-down collapse-arrow" [class.rotated]="historySectionExpanded()"></i>
+      </div>
+
+      @if (historySectionExpanded()) {
+        <div class="collapsible-content">
+          <p-table 
+        #dt
+        [value]="getFilterableFiles()" 
+        dataKey="id"
+        [paginator]="true" 
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [rowHover]="true"
+        [sortMode]="'multiple'"
+        [responsiveLayout]="'scroll'"
+        [autoLayout]="true"
+        [loading]="loading()"
+        [globalFilterFields]="['fileName', 'status', 'errorMessage']"
+        [showCurrentPageReport]="false"
+        styleClass="invoice-p-table paginator-compact"
+      >
+        <ng-template pTemplate="caption">
+          <div class="table-caption">
+            <div class="caption-left">
+              <span class="caption-title"><i class="pi pi-list"></i> Historial de Archivos</span>
+              <span class="p-input-icon-left global-filter">
+                <i class="pi pi-search"></i>
+                <input 
+                  pInputText 
+                  type="text" 
+                  (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                  placeholder="Búsqueda global..."
+                />
+              </span>
+            </div>
+            <button
+              pButton
+              type="button"
+              class="p-button-text p-button-sm"
+              icon="pi pi-filter-slash"
+              label="Limpiar filtros"
+              (click)="dt.reset()"
+            ></button>
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="fileName">Archivo <p-sortIcon field="fileName" /></th>
+            <th pSortableColumn="source">Fuente <p-sortIcon field="source" /></th>
+            <th pSortableColumn="status">Estado <p-sortIcon field="status" /></th>
+            <th pSortableColumn="syncedAt">Fecha <p-sortIcon field="syncedAt" /></th>
+            <th>Factura</th>
+            <th class="actions-col">Acciones</th>
+          </tr>
+          <tr class="filter-row">
+            <th><input pInputText type="text" placeholder="Buscar archivo" (input)="dt.filter($any($event.target).value, 'fileName', 'contains')" /></th>
+            <th>
+              <select class="filter-select" (change)="dt.filter($any($event.target).value || null, 'sourceType', 'equals')">
+                <option value="">Todos</option>
+                <option value="OneDrive">OneDrive</option>
+                <option value="Email">Email</option>
+                <option value="Portal">Portal</option>
+                <option value="WebScraping">Web Scraping</option>
+              </select>
+            </th>
+            <th>
+              <select class="filter-select" (change)="dt.filter($any($event.target).value || null, 'status', 'equals')">
+                <option value="">Todos</option>
+                <option value="Completed">Completado</option>
+                <option value="Failed">Fallido</option>
+                <option value="Skipped">Omitido</option>
+              </select>
+            </th>
+            <th><input pInputText type="date" (input)="filterByDate($event)" /></th>
+            <th>
+              <select class="filter-select" (change)="filterByInvoice($event)">
+                <option value="">Todos</option>
+                <option value="with">Con factura</option>
+                <option value="without">Sin factura</option>
+              </select>
+            </th>
+            <th>
+              <button
+                pButton
+                type="button"
+                class="p-button-rounded p-button-text p-button-sm"
+                icon="pi pi-filter-slash"
+                title="Limpiar filtros de columna"
+                (click)="dt.clear()"
+              ></button>
+            </th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-file>
+          <tr>
+            <td>
+              <i class="pi pi-file"></i>
+              {{ file.fileName }}
+            </td>
+            <td>
+              <div class="source-type-cell">
+                <i [class]="'pi ' + getSourceTypeIcon(file.source)"></i>
+                <span>{{ getSourceTypeLabel(file.source) }}</span>
+              </div>
+            </td>
+            <td>
+              <p-tag 
+                [value]="getStatusLabel(file.status)" 
+                [severity]="getSeverity(file.status)"
+              ></p-tag>
+            </td>
+            <td>{{ file.syncedAt | date: 'short' }}</td>
+            <td>
+              @if (file.invoiceId) {
+                <i class="pi pi-check-circle" style="color: var(--green-500)"></i>
+                Procesada
+              } @else {
+                <i class="pi pi-minus-circle" style="color: var(--gray-400)"></i>
+                Sin factura
+              }
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-rounded p-button-text p-button-sm"
+                  icon="pi pi-eye"
+                  (click)="viewFile(file)"
+                  title="Ver archivo"
+                  [disabled]="file.status !== 'Completed' || !file.invoiceId"
+                  [pTooltip]="!file.invoiceId && file.status === 'Completed' ? 'No hay factura asociada' : ''"
+                ></button>
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-rounded p-button-text p-button-sm"
+                  [icon]="file.status === 'Failed' ? 'pi pi-exclamation-triangle' : 'pi pi-info-circle'"
+                  [class.p-button-warning]="file.status === 'Failed'"
+                  (click)="showErrorDetails(file)"
+                  title="Ver detalles"
+                ></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6" class="text-center">
+              <div class="empty-state">
+                <i class="pi pi-inbox"></i>
+                <p>No se han sincronizado archivos todavía</p>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Diálogo de detalles de error -->
+  <p-dialog 
+    [(visible)]="errorDialogVisible" 
+    [modal]="true" 
+    [style]="{width: '550px'}"
+    [header]="'Detalles del archivo'"
+    [draggable]="false"
+    [resizable]="false"
+  >
+    @if (selectedFileForError()) {
+      <div class="error-details">
+        <div class="detail-row">
+          <label>Archivo:</label>
+          <span class="detail-value">{{ selectedFileForError()!.fileName }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Ruta:</label>
+          <span class="detail-value detail-path">{{ selectedFileForError()!.filePath }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Estado:</label>
+          <p-tag 
+            [value]="getStatusLabel(selectedFileForError()!.status)" 
+            [severity]="getSeverity(selectedFileForError()!.status)"
+          ></p-tag>
+        </div>
+        <div class="detail-row">
+          <label>Fecha sincronización:</label>
+          <span class="detail-value">{{ selectedFileForError()!.syncedAt | date: 'medium' }}</span>
+        </div>
+        <div class="detail-row">
+          <label>Tamaño:</label>
+          <span class="detail-value">{{ (selectedFileForError()!.fileSize / 1024) | number: '1.0-1' }} KB</span>
+        </div>
+        @if (selectedFileForError()!.invoiceId) {
+          <div class="detail-row">
+            <label>ID Factura:</label>
+            <span class="detail-value">{{ selectedFileForError()!.invoiceId }}</span>
+          </div>
+        }
+        <div class="detail-row detail-message">
+          <label>Información:</label>
+          <div class="message-box" [class.error-box]="selectedFileForError()!.status === 'Failed'" [class.warning-box]="selectedFileForError()!.status === 'Skipped'" [class.success-box]="selectedFileForError()!.status === 'Completed'">
+            {{ getErrorSummary(selectedFileForError()!) }}
+          </div>
+        </div>
+      </div>
+    }
+
+    <ng-template pTemplate="footer">
+      <p-button 
+        label="Cerrar" 
+        icon="pi pi-times" 
+        (onClick)="closeErrorDialog()"
+        [text]="true"
+      ></p-button>
+    </ng-template>
+  </p-dialog>
+</div>
+

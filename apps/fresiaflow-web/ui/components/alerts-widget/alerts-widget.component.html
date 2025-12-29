@@ -26,7 +26,7 @@
     </div>
   } @else {
     <div class="alerts-list">
-      @for (alert of alerts; track alert.id) {
+      @for (alert of paginatedAlerts; track alert.id) {
         <div class="alert-item" [class.resolved]="isResolved(alert)" [class]="getSeverityClass(alert.severity)">
           <div class="alert-icon">
             <i [class]="'pi ' + getAlertTypeIcon(alert.type)"></i>
@@ -63,6 +63,21 @@
         </div>
       }
     </div>
+
+    @if (totalAlerts > rowsPerPage()) {
+      <div class="alerts-paginator">
+        <p-paginator
+          [rows]="rowsPerPage()"
+          [totalRecords]="totalAlerts"
+          [rowsPerPageOptions]="rowsPerPageOptions"
+          [first]="currentPage() * rowsPerPage()"
+          (onPageChange)="onPageChange($event)"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} - {last} de {totalRecords} alertas"
+          styleClass="alerts-paginator-component">
+        </p-paginator>
+      </div>
+    }
   }
 </div>
 

@@ -12,13 +12,25 @@
     [autoLayout]="true"
     [expandedRowKeys]="expandedRowKeys"
     [showCurrentPageReport]="false"
+    [globalFilterFields]="['invoiceNumber', 'supplierName', 'supplierTaxId', 'reference']"
     styleClass="invoice-p-table paginator-compact"
     (onRowExpand)="onRowExpand($event.data?.id)"
     (onRowCollapse)="onRowCollapse($event.data?.id)"
   >
     <ng-template pTemplate="caption">
       <div class="table-caption">
-        <span><i class="pi pi-list"></i> Facturas</span>
+        <div class="caption-left">
+          <span class="caption-title"><i class="pi pi-list"></i> Facturas</span>
+          <span class="p-input-icon-left global-filter">
+            <i class="pi pi-search"></i>
+            <input 
+              pInputText 
+              type="text" 
+              (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+              placeholder="Búsqueda global..."
+            />
+          </span>
+        </div>
         <button
           pButton
           type="button"
@@ -40,9 +52,11 @@
         <th pSortableColumn="receivedDate">Recepción <p-sortIcon field="receivedDate" /></th>
         <th pSortableColumn="subtotalAmount">Base <p-sortIcon field="subtotalAmount" /></th>
         <th pSortableColumn="taxAmount">IVA <p-sortIcon field="taxAmount" /></th>
+        <th pSortableColumn="irpfAmount">IRPF <p-sortIcon field="irpfAmount" /></th>
         <th pSortableColumn="totalAmount">Total <p-sortIcon field="totalAmount" /></th>
         <th pSortableColumn="currency">Moneda <p-sortIcon field="currency" /></th>
         <th pSortableColumn="paymentType">Tipo Pago <p-sortIcon field="paymentType" /></th>
+        <th pSortableColumn="hasAccountingEntry" class="col-accounting">Asiento <p-sortIcon field="hasAccountingEntry" /></th>
         <th class="actions-col">Acciones</th>
       </tr>
       <tr class="filter-row">
@@ -54,6 +68,7 @@
         <th><input pInputText type="date" (input)="dt.filter($any($event.target).value, 'receivedDate', 'equals')" /></th>
         <th><input pInputText type="number" placeholder="≥" (input)="dt.filter($any($event.target).value, 'subtotalAmount', 'gte')" /></th>
         <th><input pInputText type="number" placeholder="≥" (input)="dt.filter($any($event.target).value, 'taxAmount', 'gte')" /></th>
+        <th><input pInputText type="number" placeholder="≥" (input)="dt.filter($any($event.target).value, 'irpfAmount', 'gte')" /></th>
         <th><input pInputText type="number" placeholder="≥" (input)="dt.filter($any($event.target).value, 'totalAmount', 'gte')" /></th>
         <th><input pInputText type="text" placeholder="€/$" (input)="dt.filter($any($event.target).value, 'currency', 'contains')" /></th>
         <th>
@@ -61,6 +76,13 @@
             <option value="">Todos</option>
             <option value="Bank">Banco</option>
             <option value="Cash">Efectivo</option>
+          </select>
+        </th>
+        <th>
+          <select class="filter-select" (change)="dt.filter($any($event.target).value === '' ? null : $any($event.target).value === 'true', 'hasAccountingEntry', 'equals')">
+            <option value="">Todos</option>
+            <option value="true">Con asiento</option>
+            <option value="false">Sin asiento</option>
           </select>
         </th>
         <th>
@@ -96,6 +118,7 @@
         <td class="col-date">{{ inv.receivedDate | date:'dd/MM/yyyy' }}</td>
         <td class="col-amount">{{ inv.subtotalAmount | number:'1.2-2' }}</td>
         <td class="col-amount">{{ inv.taxAmount ? (inv.taxAmount | number:'1.2-2') : '-' }}</td>
+        <td class="col-amount irpf-col">{{ inv.irpfAmount ? ('-' + (inv.irpfAmount | number:'1.2-2')) : '-' }}</td>
         <td class="col-amount strong">{{ inv.totalAmount | number:'1.2-2' }}</td>
         <td class="col-currency">{{ inv.currency }}</td>
         <td class="col-payment">
@@ -104,8 +127,29 @@
             {{ inv.paymentType === 'Bank' ? 'Banco' : 'Efectivo' }}
           </span>
         </td>
+        <td class="col-accounting">
+          @if (inv.hasAccountingEntry) {
+            <span class="accounting-badge has-entry" pTooltip="Tiene asiento contable">
+              <i class="pi pi-check-circle"></i>
+              Sí
+            </span>
+          } @else {
+            <span class="accounting-badge no-entry" pTooltip="Sin asiento contable">
+              <i class="pi pi-times-circle"></i>
+              No
+            </span>
+          }
+        </td>
         <td class="actions-col">
           <div class="action-buttons">
+            <button
+              pButton
+              type="button"
+              class="p-button-rounded p-button-text p-button-sm"
+              icon="pi pi-eye"
+              (click)="onView(inv)"
+              title="Ver archivo"
+            ></button>
             <button
               pButton
               type="button"
@@ -129,7 +173,7 @@
 
     <ng-template pTemplate="rowexpansion" let-inv>
       <tr>
-        <td [attr.colspan]="12">
+        <td [attr.colspan]="14">
           <div class="lines-container">
             <div class="lines-header">
               <i class="pi pi-bars"></i>

@@ -19,30 +19,33 @@ public class InvoicesController : ControllerBase
 {
     private readonly IUploadInvoiceUseCase _uploadInvoiceUseCase;
     private readonly IGetAllInvoicesUseCase _getAllInvoicesUseCase;
+    private readonly IGetFilteredInvoicesUseCase _getFilteredInvoicesUseCase;
     private readonly IDeleteInvoiceUseCase _deleteInvoiceUseCase;
     private readonly IUpdateInvoiceSupplierUseCase _updateInvoiceSupplierUseCase;
     private readonly IUpdateInvoiceUseCase _updateInvoiceUseCase;
-    private readonly IInvoiceReceivedRepository _invoiceReceivedRepository;
     private readonly IOpenAIClient _openAIClient;
+    private readonly IAccountingEntryRepository _accountingEntryRepository;
     private readonly ILogger<InvoicesController> _logger;
 
     public InvoicesController(
         IUploadInvoiceUseCase uploadInvoiceUseCase,
         IGetAllInvoicesUseCase getAllInvoicesUseCase,
+        IGetFilteredInvoicesUseCase getFilteredInvoicesUseCase,
         IDeleteInvoiceUseCase deleteInvoiceUseCase,
         IUpdateInvoiceSupplierUseCase updateInvoiceSupplierUseCase,
         IUpdateInvoiceUseCase updateInvoiceUseCase,
-        IInvoiceReceivedRepository invoiceReceivedRepository,
         IOpenAIClient openAIClient,
+        IAccountingEntryRepository accountingEntryRepository,
         ILogger<InvoicesController> logger)
     {
         _uploadInvoiceUseCase = uploadInvoiceUseCase;
         _getAllInvoicesUseCase = getAllInvoicesUseCase;
+        _getFilteredInvoicesUseCase = getFilteredInvoicesUseCase;
         _deleteInvoiceUseCase = deleteInvoiceUseCase;
         _updateInvoiceSupplierUseCase = updateInvoiceSupplierUseCase;
         _updateInvoiceUseCase = updateInvoiceUseCase;
-        _invoiceReceivedRepository = invoiceReceivedRepository;
         _openAIClient = openAIClient;
+        _accountingEntryRepository = accountingEntryRepository;
         _logger = logger;
     }
 
@@ -120,7 +123,7 @@ public class InvoicesController : ControllerBase
             } catch (Exception) { /* Ignore log errors */ }
             // #endregion
 
-            var invoices = await _invoiceReceivedRepository.GetFilteredAsync(
+            var invoices = await _getFilteredInvoicesUseCase.ExecuteAsync(
                 year,
                 quarter,
                 supplierName,
@@ -136,7 +139,22 @@ public class InvoicesController : ControllerBase
             
             _logger.LogInformation("GetAllInvoices - Se encontraron {Count} facturas", invoices.Count());
             
-            return Ok(invoices.Select(MapToDto));
+            // Obtener los IDs de facturas que tienen asientos contables
+            var invoiceIds = invoices.Select(i => i.Id).ToList();
+            var invoicesWithEntries = new HashSet<Guid>();
+            if (invoiceIds.Count > 0)
+            {
+                foreach (var invoiceId in invoiceIds)
+                {
+                    var hasEntry = await _accountingEntryRepository.ExistsForInvoiceAsync(invoiceId, cancellationToken);
+                    if (hasEntry)
+                    {
+                        invoicesWithEntries.Add(invoiceId);
+                    }
+                }
+            }
+            
+            return Ok(invoices.Select(inv => MapToDto(inv, invoicesWithEntries.Contains(inv.Id))));
         }
         catch (Exception ex)
         {
@@ -178,7 +196,8 @@ public class InvoicesController : ControllerBase
             if (invoice == null)
                 return NotFound(new { message = $"Factura con ID {id} no encontrada." });
             
-            return Ok(MapToDto(invoice));
+            var hasEntry = await _accountingEntryRepository.ExistsForInvoiceAsync(id, cancellationToken);
+            return Ok(MapToDto(invoice, hasEntry));
         }
         catch (Exception ex)
         {
@@ -190,7 +209,7 @@ public class InvoicesController : ControllerBase
     /// Mapea InvoiceReceived a DTO para la API.
     /// Expone todos los campos fiscales, económicos y de detalle según modelo contable.
     /// </summary>
-    private static Dtos.InvoiceReceivedDto MapToDto(InvoiceReceived invoice)
+    private static Dtos.InvoiceReceivedDto MapToDto(InvoiceReceived invoice, bool hasAccountingEntry = false)
     {
         return new Dtos.InvoiceReceivedDto
         {
@@ -204,6 +223,8 @@ public class InvoicesController : ControllerBase
             SubtotalAmount = invoice.SubtotalAmount.Value,
             TaxAmount = invoice.TaxAmount?.Value,
             TaxRate = invoice.TaxRate,
+            IrpfAmount = invoice.IrpfAmount?.Value,
+            IrpfRate = invoice.IrpfRate,
             TotalAmount = invoice.TotalAmount.Value,
             Currency = invoice.Currency,
             PaymentType = invoice.PaymentType.ToString(),
@@ -233,7 +254,8 @@ public class InvoicesController : ControllerBase
                 LineTotalCurrency = line.LineTotal.Currency
             }).ToList(),
             CreatedAt = invoice.CreatedAt,
-            UpdatedAt = invoice.UpdatedAt
+            UpdatedAt = invoice.UpdatedAt,
+            HasAccountingEntry = hasAccountingEntry
         };
     }
 
@@ -262,7 +284,8 @@ public class InvoicesController : ControllerBase
         if (invoice == null)
             return StatusCode(500, new { error = "La factura se subió pero no se pudo recuperar." });
 
-        return Ok(MapToDto(invoice));
+        var hasEntry = await _accountingEntryRepository.ExistsForInvoiceAsync(result.InvoiceId, cancellationToken);
+        return Ok(MapToDto(invoice, hasEntry));
     }
 
     /// <summary>
@@ -279,12 +302,27 @@ public class InvoicesController : ControllerBase
                 dto.SupplierName,
                 dto.SupplierTaxId,
                 dto.IssueDate,
+                dto.ReceivedDate,
                 dto.DueDate,
+                dto.SupplierAddress,
                 dto.TotalAmount,
                 dto.TaxAmount,
+                dto.TaxRate,
+                dto.IrpfAmount,
+                dto.IrpfRate,
                 dto.SubtotalAmount,
                 dto.Currency,
-                dto.Notes);
+                dto.Notes,
+                dto.Lines?.Select(l => new UpdateInvoiceLineCommand(
+                    l.Id,
+                    l.LineNumber,
+                    l.Description,
+                    l.Quantity,
+                    l.UnitPrice,
+                    l.UnitPriceCurrency,
+                    l.TaxRate,
+                    l.LineTotal,
+                    l.LineTotalCurrency)));
 
             await _updateInvoiceUseCase.ExecuteAsync(command, cancellationToken);
 
@@ -295,19 +333,23 @@ public class InvoicesController : ControllerBase
             if (invoice == null)
                 return NotFound(new { message = $"Factura con ID {id} no encontrada." });
 
-            return Ok(MapToDto(invoice));
+            var hasEntry = await _accountingEntryRepository.ExistsForInvoiceAsync(id, cancellationToken);
+            return Ok(MapToDto(invoice, hasEntry));
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogError(ex, "Error actualizando factura {InvoiceId}: {Message}", id, ex.Message);
             return NotFound(new { error = ex.Message });
         }
         catch (ArgumentException ex)
         {
+            _logger.LogError(ex, "Error de validación al actualizar factura {InvoiceId}: {Message}", id, ex.Message);
             return BadRequest(new { error = ex.Message });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = ex.Message });
+            _logger.LogError(ex, "Error inesperado al actualizar factura {InvoiceId}", id);
+            return StatusCode(500, new { error = $"Error al actualizar la factura: {ex.Message}" });
         }
     }
 
@@ -332,7 +374,8 @@ public class InvoicesController : ControllerBase
             if (invoice == null)
                 return NotFound(new { message = $"Factura con ID {id} no encontrada." });
 
-            return Ok(MapToDto(invoice));
+            var hasEntry = await _accountingEntryRepository.ExistsForInvoiceAsync(id, cancellationToken);
+            return Ok(MapToDto(invoice, hasEntry));
         }
         catch (InvalidOperationException ex)
         {
@@ -376,6 +419,51 @@ public class InvoicesController : ControllerBase
     }
 
     /// <summary>
+    /// Descarga el archivo original de una factura para visualización.
+    /// </summary>
+    [HttpGet("{id:guid}/download")]
+    public async Task<IActionResult> DownloadInvoice(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var allInvoices = await _getAllInvoicesUseCase.ExecuteAsync(cancellationToken);
+            var invoice = allInvoices.FirstOrDefault(i => i.Id == id);
+            
+            if (invoice == null)
+                return NotFound(new { message = $"Factura con ID {id} no encontrada." });
+
+            // Usar el archivo procesado si existe, de lo contrario el original
+            var filePath = !string.IsNullOrEmpty(invoice.ProcessedFilePath) && System.IO.File.Exists(invoice.ProcessedFilePath)
+                ? invoice.ProcessedFilePath
+                : invoice.OriginalFilePath;
+
+            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
+                return NotFound(new { message = "Archivo no encontrado en el sistema de archivos." });
+
+            var extension = Path.GetExtension(filePath).ToLower();
+            var contentType = extension switch
+            {
+                ".pdf" => "application/pdf",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".webp" => "image/webp",
+                _ => "application/octet-stream"
+            };
+
+            var fileName = Path.GetFileName(filePath);
+            var fileStream = System.IO.File.OpenRead(filePath);
+            
+            return File(fileStream, contentType, fileName, enableRangeProcessing: true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error descargando factura {InvoiceId}", id);
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Exporta facturas recibidas a Excel con los filtros aplicados.
     /// </summary>
     [HttpGet("export")]
@@ -394,7 +482,7 @@ public class InvoicesController : ControllerBase
                 paymentTypeEnum = parsed;
             }
 
-            var invoices = await _invoiceReceivedRepository.GetFilteredAsync(
+            var invoices = await _getFilteredInvoicesUseCase.ExecuteAsync(
                 year,
                 quarter,
                 supplierName,
@@ -434,7 +522,7 @@ public class InvoicesController : ControllerBase
                 paymentTypeEnum = parsed;
             }
 
-            var invoices = await _invoiceReceivedRepository.GetFilteredAsync(
+            var invoices = await _getFilteredInvoicesUseCase.ExecuteAsync(
                 request.Year,
                 request.Quarter,
                 request.SupplierName,

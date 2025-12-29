@@ -9,6 +9,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// SignalR
+builder.Services.AddSignalR();
+
 // CORS
 builder.Services.AddCors();
 
@@ -42,17 +45,33 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Habilitar Swagger también en producción para desarrollo local
+if (!app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-// CORS para permitir peticiones desde el frontend
+// Comentar redirect HTTPS para desarrollo local
+// app.UseHttpsRedirection();
+
+// CORS DEBE estar ANTES de UseAuthorization y MapHub para SignalR
 app.UseCors(policy => policy
     .WithOrigins("http://localhost:4200")
     .AllowAnyMethod()
     .AllowAnyHeader()
     .AllowCredentials());
 
+app.UseRouting(); // Necesario para SignalR
+
 app.UseAuthorization();
-app.MapControllers();
+
+// MapHub debe estar dentro de UseEndpoints o después de UseRouting
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapControllers();
+    endpoints.MapHub<FresiaFlow.Adapters.Inbound.Api.Hubs.SyncProgressHub>("/hubs/sync-progress");
+});
 
 // Configurar puerto 5000
 app.Urls.Add("http://localhost:5000");

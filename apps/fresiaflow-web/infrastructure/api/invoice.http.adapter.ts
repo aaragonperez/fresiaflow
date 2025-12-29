@@ -143,6 +143,13 @@ export class InvoiceHttpAdapter implements InvoiceApiPort {
     );
   }
 
+  async downloadInvoice(id: string): Promise<Blob> {
+    const response = await firstValueFrom(
+      this.http.get(`${this.baseUrl}/${id}/download`, { responseType: 'blob' })
+    );
+    return response;
+  }
+
   async exportToExcel(filter?: InvoiceFilter): Promise<Blob> {
     let params = new HttpParams();
     if (filter?.year) params = params.set('year', filter.year.toString());
@@ -185,6 +192,8 @@ export class InvoiceHttpAdapter implements InvoiceApiPort {
         subtotalAmount: dto.subtotalAmount ?? 0,
         taxAmount: dto.taxAmount,
         taxRate: dto.taxRate,
+        irpfAmount: dto.irpfAmount,
+        irpfRate: dto.irpfRate,
         totalAmount: dto.totalAmount,
         currency: dto.currency || 'EUR',
         paymentType: dto.paymentType === 'Bank' ? 'Bank' as any : 'Cash' as any,
@@ -212,7 +221,8 @@ export class InvoiceHttpAdapter implements InvoiceApiPort {
           lineTotalCurrency: line.lineTotalCurrency || dto.currency || 'EUR'
         })),
         createdAt: new Date(dto.createdAt || dto.issueDate),
-        updatedAt: new Date(dto.updatedAt || dto.issueDate)
+        updatedAt: new Date(dto.updatedAt || dto.issueDate),
+        hasAccountingEntry: dto.hasAccountingEntry || false
       };
       return result;
     } catch (error: any) {

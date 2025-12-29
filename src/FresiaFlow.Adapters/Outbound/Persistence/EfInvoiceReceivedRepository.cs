@@ -89,6 +89,17 @@ public class EfInvoiceReceivedRepository : IInvoiceReceivedRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IEnumerable<InvoiceReceived>> GetByExactSupplierNameAsync(
+        string supplierName,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.InvoicesReceived
+            .Include(i => i.Lines)
+            .Include(i => i.Payments)
+            .Where(i => i.SupplierName == supplierName)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IEnumerable<InvoiceReceived>> GetByPaymentTypeAsync(
         PaymentType paymentType, 
         CancellationToken cancellationToken = default)
@@ -365,6 +376,12 @@ public class EfInvoiceReceivedRepository : IInvoiceReceivedRepository
     public async Task UpdateAsync(InvoiceReceived invoiceReceived, CancellationToken cancellationToken = default)
     {
         _context.InvoicesReceived.Update(invoiceReceived);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateManyAsync(IEnumerable<InvoiceReceived> invoices, CancellationToken cancellationToken = default)
+    {
+        _context.InvoicesReceived.UpdateRange(invoices);
         await _context.SaveChangesAsync(cancellationToken);
     }
 

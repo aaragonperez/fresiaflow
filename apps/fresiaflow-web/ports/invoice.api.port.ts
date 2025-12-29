@@ -8,12 +8,28 @@ export interface UpdateInvoiceRequest {
   supplierName?: string;
   supplierTaxId?: string;
   issueDate?: string;
+  receivedDate?: string;
   dueDate?: string;
+  supplierAddress?: string;
   totalAmount?: number;
   taxAmount?: number;
+  taxRate?: number;
   subtotalAmount?: number;
   currency?: string;
   notes?: string;
+  lines?: UpdateInvoiceLineRequest[];
+}
+
+export interface UpdateInvoiceLineRequest {
+  id?: string;
+  lineNumber: number;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  unitPriceCurrency?: string;
+  taxRate?: number;
+  lineTotal: number;
+  lineTotalCurrency?: string;
 }
 
 export interface InvoiceFilter {
@@ -30,6 +46,7 @@ export interface InvoiceApiPort {
   updateInvoice(id: string, data: UpdateInvoiceRequest): Promise<Invoice>;
   markAsPaid(invoiceId: string, transactionId: string): Promise<void>;
   deleteInvoice(id: string): Promise<void>;
+  downloadInvoice(id: string): Promise<Blob>;
   exportToExcel(filter?: InvoiceFilter): Promise<Blob>;
   chatAboutInvoices(question: string, filter?: InvoiceFilter): Promise<{ answer: string; context?: any }>;
 }

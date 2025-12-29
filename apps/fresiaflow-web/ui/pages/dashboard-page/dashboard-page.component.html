@@ -1,3 +1,4 @@
+<p-toast></p-toast>
 <div class="dashboard-page">
   <!-- Header -->
   <div class="page-header">
@@ -65,7 +66,11 @@
         [tasks]="tasks()"
         [loading]="tasksLoading()"
         [error]="tasksError()"
-        (taskClick)="onTaskClick($event)">
+        (taskClick)="onTaskClick($event)"
+        (taskComplete)="onTaskComplete($event)"
+        (taskUncomplete)="onTaskUncomplete($event)"
+        (taskPriorityChange)="onTaskPriorityChange($event)"
+        (taskPinToggle)="onTaskPinToggle($event)">
       </app-tasks-widget>
     </div>
 

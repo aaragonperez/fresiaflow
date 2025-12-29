@@ -1,0 +1,502 @@
+import { Component, OnInit, inject, signal, ViewChild, OnDestroy, NgZone } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { ButtonModule } from 'primeng/button';
+import { InputSwitchModule } from 'primeng/inputswitch';
+import { Table, TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { ProgressBarModule } from 'primeng/progressbar';
+import { MessageModule } from 'primeng/message';
+import { DividerModule } from 'primeng/divider';
+import * as signalR from '@microsoft/signalr';
+import { 
+  OneDriveSyncService, 
+  OneDriveSyncConfigUpdate,
+  SyncedFile 
+} from '../../../infrastructure/services/onedrive-sync.service';
+
+@Component({
+  selector: 'app-onedrive-config',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    InputTextModule,
+    InputNumberModule,
+    ButtonModule,
+    InputSwitchModule,
+    TableModule,
+    TagModule,
+    TooltipModule,
+    ProgressSpinnerModule,
+    ProgressBarModule,
+    MessageModule,
+    DividerModule
+  ],
+  templateUrl: './onedrive-config.component.html',
+  styleUrl: './onedrive-config.component.css'
+})
+export class OneDriveConfigComponent implements OnInit, OnDestroy {
+  private syncService = inject(OneDriveSyncService);
+  private http = inject(HttpClient);
+  private ngZone = inject(NgZone);
+  private hubConnection?: signalR.HubConnection;
+  private syncCancelled = false;
+
+  @ViewChild('dt') table!: Table;
+
+  // Form fields
+  enabled = signal(false);
+  tenantId = signal('');
+  clientId = signal('');
+  clientSecret = signal('');
+  folderPath = signal('');
+  driveId = signal('');
+  syncIntervalMinutes = signal(15);
+
+  // State
+  validating = signal(false);
+  validationResult = signal<{ isValid: boolean; message: string; fileCount?: number } | null>(null);
+  saveSuccess = signal(false);
+  syncResult = signal<{ success: boolean; message: string } | null>(null);
+
+  // Collapsible sections state
+  azureConfigExpanded = signal(true);
+  folderConfigExpanded = signal(true);
+  syncManualExpanded = signal(true);
+  historyExpanded = signal(true);
+  instructionsExpanded = signal(false);
+  
+  // Sync options
+  forceReprocess = signal(false);
+
+  // Expose service signals (incluye progreso de sincronización que persiste)
+  config = this.syncService.config;
+  syncedFiles = this.syncService.syncedFiles;
+  loading = this.syncService.loading;
+  syncing = this.syncService.syncing;
+  error = this.syncService.error;
+  syncProgress = this.syncService.syncProgress;
+  syncCurrentFile = this.syncService.syncCurrentFile;
+  syncProcessedCount = this.syncService.syncProcessedCount;
+  syncTotalCount = this.syncService.syncTotalCount;
+  syncStatus = this.syncService.syncStatus;
+  syncMessage = this.syncService.syncMessage;
+
+  ngOnInit(): void {
+    this.loadConfig();
+    this.initializeSignalR();
+  }
+
+  ngOnDestroy(): void {
+    this.hubConnection?.stop();
+  }
+
+  private initializeSignalR(): void {
+    this.hubConnection = new signalR.HubConnectionBuilder()
+      .withUrl('http://localhost:5000/hubs/sync-progress', {
+        skipNegotiation: false,
+        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling,
+        withCredentials: false
+      })
+      .withAutomaticReconnect({
+        nextRetryDelayInMilliseconds: retryContext => {
+          if (retryContext.elapsedMilliseconds < 60000) {
+            return Math.random() * 5000;
+          } else {
+            return null;
+          }
+        }
+      })
+      .configureLogging(signalR.LogLevel.Information)
+      .build();
+
+    this.hubConnection.on('ReceiveProgress', (update: any) => {
+      console.log('✅ SignalR - Progreso recibido:', update);
+      
+      // Si el usuario canceló, no actualizar más la UI
+      if (this.syncCancelled) {
+        console.log('⚠️ Sincronización cancelada, ignorando actualizaciones');
+        return;
+      }
+
+      // Ejecutar dentro de la zona de Angular para asegurar detección de cambios
+      this.ngZone.run(() => {
+        // Actualizar progreso (SignalR serializa a camelCase automáticamente)
+        this.syncService.syncCurrentFile.set(update.currentFile || '');
+        this.syncService.syncProcessedCount.set(update.processedCount || 0);
+        this.syncService.syncTotalCount.set(update.totalCount || 0);
+        this.syncService.syncProgress.set(update.percentage || 0);
+        this.syncService.syncMessage.set(update.message || '');
+        
+        // Actualizar estado según el archivo actual
+        if (update.currentFile === 'Completado') {
+          this.syncService.syncStatus.set('completed');
+          setTimeout(() => {
+            this.syncService.loadSyncedFiles();
+            this.syncService.loadConfig();
+          }, 1000);
+        } else if (update.currentFile === 'Error') {
+          this.syncService.syncStatus.set('error');
+        } else if (update.currentFile === 'Cancelado') {
+          this.syncService.syncStatus.set('cancelled');
+        } else if (update.currentFile) {
+          this.syncService.syncStatus.set('syncing');
+        }
+      });
+    });
+
+    // Eventos de conexión para depuración
+    this.hubConnection.onclose((error) => {
+      console.error('❌ SignalR - Conexión cerrada:', error);
+    });
+
+    this.hubConnection.onreconnecting((error) => {
+      console.warn('⚠️ SignalR - Reconectando...', error);
+    });
+
+    this.hubConnection.onreconnected((connectionId) => {
+      console.log('✅ SignalR - Reconectado:', connectionId);
+    });
+
+    this.hubConnection.start()
+      .then(() => {
+        console.log('✅ SignalR conectado correctamente. ConnectionId:', this.hubConnection?.connectionId);
+      })
+      .catch(err => {
+        console.error('❌ Error conectando SignalR:', err);
+        console.error('Detalles del error:', {
+          name: err.name,
+          message: err.message,
+          stack: err.stack
+        });
+      });
+  }
+
+  toggleAzureConfig(): void {
+    this.azureConfigExpanded.set(!this.azureConfigExpanded());
+  }
+
+  toggleFolderConfig(): void {
+    this.folderConfigExpanded.set(!this.folderConfigExpanded());
+  }
+
+  toggleSyncManual(): void {
+    this.syncManualExpanded.set(!this.syncManualExpanded());
+  }
+
+  toggleHistory(): void {
+    this.historyExpanded.set(!this.historyExpanded());
+  }
+
+  toggleInstructions(): void {
+    this.instructionsExpanded.set(!this.instructionsExpanded());
+  }
+
+  async loadConfig(): Promise<void> {
+    try {
+      await this.syncService.loadConfig();
+      const config = this.config();
+      
+      if (config) {
+        this.enabled.set(config.enabled);
+        this.tenantId.set(config.tenantId || '');
+        this.clientId.set(config.clientId || '');
+        this.folderPath.set(config.folderPath || '');
+        this.driveId.set(config.driveId || '');
+        this.syncIntervalMinutes.set(config.syncIntervalMinutes || 15);
+        // No cargamos el clientSecret por seguridad
+      }
+
+      await this.syncService.loadSyncedFiles();
+    } catch (err) {
+      console.error('Error loading config:', err);
+    }
+  }
+
+  async validateConnection(): Promise<void> {
+    if (!this.tenantId() || !this.clientId() || !this.clientSecret() || !this.folderPath()) {
+      this.validationResult.set({
+        isValid: false,
+        message: 'Por favor, completa todos los campos obligatorios'
+      });
+      return;
+    }
+
+    this.validating.set(true);
+    this.validationResult.set(null);
+
+    try {
+      const result = await this.syncService.validateConfig(
+        this.tenantId(),
+        this.clientId(),
+        this.clientSecret(),
+        this.folderPath(),
+        this.driveId() || undefined
+      );
+
+      if (result.isValid) {
+        this.validationResult.set({
+          isValid: true,
+          message: `Conexión exitosa. Se encontraron ${result.invoiceFileCount} archivos de factura en la carpeta.`,
+          fileCount: result.invoiceFileCount
+        });
+      } else {
+        this.validationResult.set({
+          isValid: false,
+          message: result.errorMessage || 'Error de conexión'
+        });
+      }
+    } catch (err: any) {
+      this.validationResult.set({
+        isValid: false,
+        message: err.message || 'Error validando conexión'
+      });
+    } finally {
+      this.validating.set(false);
+    }
+  }
+
+  async saveConfig(): Promise<void> {
+    this.saveSuccess.set(false);
+    
+    // Si el clientSecret está vacío pero ya existe uno guardado, no lo enviamos
+    // para evitar sobrescribirlo con un string vacío
+    const currentConfig = this.config();
+    const clientSecretToSend = this.clientSecret().trim();
+    const shouldSendClientSecret = clientSecretToSend.length > 0 || !currentConfig?.hasClientSecret;
+    
+    const configUpdate: OneDriveSyncConfigUpdate = {
+      enabled: this.enabled(),
+      tenantId: this.tenantId(),
+      clientId: this.clientId(),
+      clientSecret: shouldSendClientSecret ? clientSecretToSend : '',
+      folderPath: this.folderPath(),
+      driveId: this.driveId() || undefined,
+      syncIntervalMinutes: this.syncIntervalMinutes()
+    };
+
+    try {
+      const savedConfig = await this.syncService.saveConfig(configUpdate);
+      
+      // Actualizar los signals locales con los valores guardados
+      this.enabled.set(savedConfig.enabled);
+      this.tenantId.set(savedConfig.tenantId || '');
+      this.clientId.set(savedConfig.clientId || '');
+      this.folderPath.set(savedConfig.folderPath || '');
+      this.driveId.set(savedConfig.driveId || '');
+      this.syncIntervalMinutes.set(savedConfig.syncIntervalMinutes || 15);
+      
+      // NO limpiamos el clientSecret del formulario si el usuario acaba de ingresarlo
+      // Solo lo limpiamos si NO se envió uno nuevo (es decir, se mantuvo vacío durante el guardado)
+      // Esto permite que el usuario pueda hacer múltiples cambios sin tener que volver a ingresar el secret
+      if (!clientSecretToSend && savedConfig.hasClientSecret) {
+        // Si no se envió un secret nuevo, mantenemos el campo vacío
+        this.clientSecret.set('');
+      }
+      // Si se envió un secret nuevo, lo dejamos en el campo para futuras ediciones
+      
+      this.saveSuccess.set(true);
+      setTimeout(() => this.saveSuccess.set(false), 3000);
+    } catch (err) {
+      console.error('Error saving config:', err);
+    }
+  }
+
+  async syncNow(): Promise<void> {
+    // Prevenir múltiples sincronizaciones simultáneas (protección de doble clic)
+    if (this.syncService.syncing()) {
+      console.warn('Ya hay una sincronización en progreso. Ignorando clic duplicado.');
+      return;
+    }
+
+    this.syncResult.set(null);
+    this.syncService.syncStatus.set('syncing');
+    this.syncService.syncProgress.set(0);
+    this.syncCancelled = false;
+    
+    try {
+      const result = await this.syncService.syncNow(this.forceReprocess());
+      
+      // Si el usuario canceló desde la UI, ignorar el resultado
+      if (this.syncCancelled) {
+        return;
+      }
+      
+      if (result.success) {
+        this.syncResult.set({
+          success: true,
+          message: `Sincronización completada: ${result.processedCount} procesados, ${result.skippedCount} omitidos, ${result.failedCount} fallidos`
+        });
+        this.syncService.syncStatus.set('completed');
+        
+        // Resetear el checkbox después de sincronizar
+        if (this.forceReprocess()) {
+          this.forceReprocess.set(false);
+        }
+      } else {
+        this.syncResult.set({
+          success: false,
+          message: result.errorMessage || 'Error durante la sincronización'
+        });
+        this.syncService.syncStatus.set('error');
+      }
+    } catch (err: any) {
+      if (!this.syncCancelled) {
+        this.syncResult.set({
+          success: false,
+          message: err.message || 'Error durante la sincronización'
+        });
+        this.syncService.syncStatus.set('error');
+      }
+    }
+  }
+
+  async cancelSync(): Promise<void> {
+    this.syncCancelled = true;
+    
+    try {
+      await this.syncService.cancelSync();
+      
+      this.syncResult.set({
+        success: false,
+        message: 'Sincronización cancelada por el usuario'
+      });
+    } catch (err: any) {
+      console.error('Error cancelando sincronización:', err);
+      this.syncResult.set({
+        success: false,
+        message: 'Error al cancelar: ' + (err.message || 'Error desconocido')
+      });
+    }
+  }
+
+  getStatusSeverity(status: string): 'success' | 'secondary' | 'info' | 'warn' | 'danger' | 'contrast' {
+    switch (status) {
+      case 'Completed': return 'success';
+      case 'Processing': return 'info';
+      case 'Pending': return 'secondary';
+      case 'Failed': return 'danger';
+      case 'Skipped': return 'warn';
+      default: return 'secondary';
+    }
+  }
+
+  getStatusLabel(status: string): string {
+    switch (status) {
+      case 'Completed': return 'Completado';
+      case 'Processing': return 'Procesando';
+      case 'Pending': return 'Pendiente';
+      case 'Failed': return 'Fallido';
+      case 'Skipped': return 'Omitido';
+      default: return status;
+    }
+  }
+
+  formatDate(date: string): string {
+    return new Date(date).toLocaleString('es-ES');
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  onFilterChange(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.table.filterGlobal(target.value, 'contains');
+  }
+
+  async viewFile(file: SyncedFile): Promise<void> {
+    // Verificar que el archivo tiene una factura asociada
+    if (!file.invoiceId) {
+      alert('Este archivo no tiene una factura asociada para visualizar.');
+      return;
+    }
+
+    try {
+      // Descargar desde el almacenamiento local usando el endpoint de facturas
+      const blob = await firstValueFrom(
+        this.http.get(`/api/invoices/${file.invoiceId}/download`, {
+          responseType: 'blob'
+        })
+      );
+      
+      const url = URL.createObjectURL(blob);
+      
+      // Abrir en nueva ventana
+      window.open(url, '_blank');
+      
+      // Liberar el objeto URL después de un tiempo
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (err: any) {
+      console.error('Error abriendo archivo:', err);
+      alert('Error al abrir el archivo: ' + (err.message || 'Error desconocido'));
+    }
+  }
+
+  async clearDatabase(): Promise<void> {
+    // Primera confirmación
+    const confirmacion1 = confirm(
+      '⚠️ ¡PELIGRO! ⚠️\n\n' +
+      'Estás a punto de ELIMINAR TODOS LOS DATOS de la base de datos:\n\n' +
+      '✗ Todas las facturas recibidas\n' +
+      '✗ Todas las transacciones bancarias\n' +
+      '✗ Todas las cuentas bancarias\n' +
+      '✗ Todo el historial de sincronización\n' +
+      '✗ Todos los archivos sincronizados\n\n' +
+      'Esta acción es IRREVERSIBLE y NO SE PUEDE DESHACER.\n\n' +
+      '¿Estás ABSOLUTAMENTE SEGURO de que quieres continuar?'
+    );
+
+    if (!confirmacion1) {
+      return;
+    }
+
+    // Segunda confirmación con código de verificación
+    const codigo = prompt(
+      '⚠️ ÚLTIMA ADVERTENCIA ⚠️\n\n' +
+      'Para confirmar que realmente quieres eliminar TODOS los datos,\n' +
+      'escribe exactamente el siguiente código:\n\n' +
+      'DELETE_ALL_DATA\n\n' +
+      'Escribe el código para continuar:'
+    );
+
+    if (codigo !== 'DELETE_ALL_DATA') {
+      if (codigo !== null) {
+        alert('Código incorrecto. Operación cancelada.');
+      }
+      return;
+    }
+
+    try {
+      this.loading.set(true);
+      this.syncService.error.set(null);
+      
+      const result = await this.syncService.clearDatabase('DELETE_ALL_DATA');
+      
+      alert(
+        '✓ Base de datos limpiada correctamente\n\n' +
+        'Se han eliminado todos los datos de forma permanente.'
+      );
+      
+      // Recargar la página para reflejar el estado limpio
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Error limpiando base de datos:', err);
+      alert('Error al limpiar la base de datos: ' + (err.message || 'Error desconocido'));
+      this.syncService.error.set(err.message || 'Error limpiando la base de datos');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+}
+
+

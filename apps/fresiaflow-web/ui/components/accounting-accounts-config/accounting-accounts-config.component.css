@@ -1,0 +1,240 @@
+.accounting-accounts-config {
+  width: 100%;
+}
+
+.config-header {
+  margin-bottom: 1.5rem;
+}
+
+.config-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-color, #1f2937);
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.config-header h2 i {
+  color: var(--primary-color, #dc2626);
+}
+
+.description {
+  color: var(--text-color, #6b7280);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.error-message {
+  padding: 1rem;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #991b1b;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.actions-bar {
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Columnas */
+.col-code {
+  font-weight: 600;
+  font-family: monospace;
+}
+
+.col-name {
+  text-align: left;
+}
+
+.col-type,
+.col-status {
+  text-align: center;
+}
+
+/* Diálogo */
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-color, #374151);
+}
+
+.form-group small {
+  font-size: 0.75rem;
+  color: var(--text-color, #6b7280);
+  margin-top: -0.25rem;
+}
+
+.form-group input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+.dialog-footer-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+/* Estilos compartidos con invoice-table */
+.table-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.25rem;
+  font-weight: 600;
+  color: var(--text-color, #1f2937);
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.caption-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.caption-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.table-caption i {
+  color: var(--primary-color);
+}
+
+.global-filter {
+  flex: 1;
+  max-width: 300px;
+  position: relative;
+}
+
+.global-filter input {
+  width: 100%;
+  padding: 0.4rem 0.4rem 0.4rem 2.5rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--secondary-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+.global-filter input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.global-filter .pi-search {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-color, #6b7280);
+  opacity: 0.6;
+  font-size: 0.875rem;
+  pointer-events: none;
+  z-index: 1;
+  line-height: 1;
+}
+
+:host ::ng-deep .global-filter.p-input-icon-left > i:first-child {
+  left: 0.75rem !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: var(--text-color, #6b7280) !important;
+  opacity: 0.6 !important;
+  font-size: 0.875rem !important;
+  margin-top: 0 !important;
+}
+
+.filter-row th {
+  padding: 0.35rem 0.4rem !important;
+}
+
+.filter-row input,
+.filter-row select {
+  width: 100%;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--secondary-color, #e5e7eb);
+  border-radius: 4px;
+  background: var(--card-bg, white);
+  color: var(--text-color, #1f2937);
+}
+
+.filter-row input:focus,
+.filter-row select:focus {
+  outline: none;
+  border-color: var(--primary-color, #dc2626);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color, #dc2626) 10%, transparent);
+}
+
+.filter-select {
+  height: 26px;
+  cursor: pointer;
+}
+
+.actions-col {
+  width: 120px;
+  text-align: right;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+:host ::ng-deep .action-buttons .p-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+:host ::ng-deep .action-buttons .p-button .pi {
+  font-size: 0.8rem;
+}
+
+:host ::ng-deep .action-buttons .p-button:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+}
+
+.empty-message {
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-color, #9ca3af);
+  opacity: 0.7;
+}
+
+.empty-message i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+

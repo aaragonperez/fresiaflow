@@ -1,0 +1,518 @@
+<div class="onedrive-config">
+  <div class="config-header">
+    <div class="header-title">
+      <i class="pi pi-microsoft"></i>
+      <h2>Sincronización con OneDrive</h2>
+    </div>
+    <p class="header-description">
+      Configura la sincronización automática de facturas desde tu OneDrive empresarial o educativo.
+    </p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <p-progressSpinner strokeWidth="4" />
+      <p>Cargando configuración...</p>
+    </div>
+  } @else {
+    <!-- Estado actual -->
+    @if (config()?.configured) {
+      <div class="status-card" [class.enabled]="config()?.enabled" [class.disabled]="!config()?.enabled">
+        <div class="status-icon">
+          <i class="pi" [class.pi-check-circle]="config()?.enabled" [class.pi-times-circle]="!config()?.enabled"></i>
+        </div>
+        <div class="status-info">
+          <h3>{{ config()?.enabled ? 'Sincronización Activa' : 'Sincronización Desactivada' }}</h3>
+          <p>
+            @if (config()?.lastSyncAt) {
+              Última sincronización: {{ formatDate(config()!.lastSyncAt!) }}
+            } @else {
+              Nunca sincronizado
+            }
+          </p>
+          @if (config()?.lastSyncError) {
+            <p class="error-text">
+              <i class="pi pi-exclamation-triangle"></i>
+              {{ config()?.lastSyncError }}
+            </p>
+          }
+        </div>
+        <div class="status-stats">
+          <div class="stat">
+            <span class="stat-value">{{ config()?.totalFilesSynced || 0 }}</span>
+            <span class="stat-label">Archivos sincronizados</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Formulario de configuración -->
+    <div class="config-form">
+      <div class="section-header" (click)="toggleAzureConfig()">
+        <div class="section-title">
+          <i class="pi pi-cog"></i>
+          <h3>Configuración de Azure AD</h3>
+        </div>
+        <i class="pi pi-angle-down collapse-icon" [class.rotated]="azureConfigExpanded()"></i>
+      </div>
+
+      @if (azureConfigExpanded()) {
+        <div class="section-content">
+          <p class="form-hint">
+            Para conectar con OneDrive, necesitas crear una aplicación en Azure AD. 
+            <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank">
+              Crear aplicación en Azure
+            </a>
+          </p>
+
+          <div class="form-grid">
+        <div class="form-group">
+          <label for="tenantId">
+            <i class="pi pi-building"></i> Tenant ID (Directory ID)
+            <span class="required">*</span>
+          </label>
+          <input 
+            pInputText 
+            id="tenantId" 
+            [ngModel]="tenantId()" 
+            (ngModelChange)="tenantId.set($event)"
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="clientId">
+            <i class="pi pi-key"></i> Application (Client) ID
+            <span class="required">*</span>
+          </label>
+          <input 
+            pInputText 
+            id="clientId" 
+            [ngModel]="clientId()" 
+            (ngModelChange)="clientId.set($event)"
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+          />
+        </div>
+
+        <div class="form-group full-width">
+          <label for="clientSecret">
+            <i class="pi pi-lock"></i> Client Secret
+            <span class="required">*</span>
+            @if (config()?.hasClientSecret && !clientSecret()) {
+              <span class="saved-indicator">✓ Ya configurado</span>
+            }
+          </label>
+          <input 
+            pInputText 
+            type="password"
+            id="clientSecret" 
+            [ngModel]="clientSecret()" 
+            (ngModelChange)="clientSecret.set($event)"
+            [placeholder]="config()?.hasClientSecret && !clientSecret() ? 'Dejar vacío para mantener el actual' : 'Introduce el Client Secret de tu aplicación'"
+          />
+          @if (config()?.hasClientSecret && !clientSecret()) {
+            <small class="hint-text">
+              <i class="pi pi-info-circle"></i> 
+              Ya existe un Client Secret guardado. Déjalo vacío para mantenerlo o ingresa uno nuevo para reemplazarlo.
+            </small>
+          }
+        </div>
+          </div>
+        </div>
+      }
+
+      <div class="section-header" (click)="toggleFolderConfig()">
+        <div class="section-title">
+          <i class="pi pi-folder"></i>
+          <h3>Carpeta de OneDrive</h3>
+        </div>
+        <i class="pi pi-angle-down collapse-icon" [class.rotated]="folderConfigExpanded()"></i>
+      </div>
+
+      @if (folderConfigExpanded()) {
+        <div class="section-content">
+          <div class="form-grid">
+        <div class="form-group">
+          <label for="folderPath">
+            <i class="pi pi-folder-open"></i> Ruta de la carpeta
+            <span class="required">*</span>
+          </label>
+          <input 
+            pInputText 
+            id="folderPath" 
+            [ngModel]="folderPath()" 
+            (ngModelChange)="folderPath.set($event)"
+            placeholder="Facturas/2025"
+          />
+          <small>Ruta relativa desde la raíz de OneDrive</small>
+        </div>
+
+        <div class="form-group">
+          <label for="driveId">
+            <i class="pi pi-database"></i> Drive ID (opcional)
+          </label>
+          <input 
+            pInputText 
+            id="driveId" 
+            [ngModel]="driveId()" 
+            (ngModelChange)="driveId.set($event)"
+            placeholder="Para SharePoint o Teams"
+          />
+          <small>Dejar vacío para OneDrive personal</small>
+        </div>
+
+        <div class="form-group">
+          <label for="syncInterval">
+            <i class="pi pi-clock"></i> Intervalo de sincronización
+          </label>
+          <p-inputNumber 
+            id="syncInterval"
+            [ngModel]="syncIntervalMinutes()" 
+            (ngModelChange)="syncIntervalMinutes.set($event)"
+            [min]="1" 
+            [max]="1440"
+            suffix=" minutos"
+          />
+        </div>
+          </div>
+        </div>
+      }
+
+      <div class="form-actions">
+        <button 
+          pButton 
+          type="button" 
+          label="Probar conexión" 
+          icon="pi pi-wifi"
+          class="p-button-outlined"
+          [loading]="validating()"
+          (click)="validateConnection()"
+        ></button>
+
+        <div class="enable-switch">
+          <label for="enabled">Activar sincronización automática</label>
+          <p-inputSwitch 
+            id="enabled"
+            [ngModel]="enabled()" 
+            (ngModelChange)="enabled.set($event)"
+          />
+        </div>
+
+        <button 
+          pButton 
+          type="button" 
+          label="Guardar configuración" 
+          icon="pi pi-save"
+          [loading]="loading()"
+          (click)="saveConfig()"
+        ></button>
+      </div>
+
+      @if (validationResult()) {
+        <p-message 
+          [severity]="validationResult()!.isValid ? 'success' : 'error'" 
+          [text]="validationResult()!.message"
+        />
+      }
+
+      @if (saveSuccess()) {
+        <p-message severity="success" text="Configuración guardada correctamente" />
+      }
+
+      @if (error()) {
+        <p-message severity="error" [text]="error()!" />
+      }
+    </div>
+
+    <!-- Sincronización manual -->
+    @if (config()?.configured) {
+      <div class="sync-section">
+        <div class="section-header" (click)="toggleSyncManual()">
+          <div class="section-title">
+            <i class="pi pi-sync"></i>
+            <h3>Sincronización Manual</h3>
+          </div>
+          <i class="pi pi-angle-down collapse-icon" [class.rotated]="syncManualExpanded()"></i>
+        </div>
+
+        @if (syncManualExpanded()) {
+          <div class="section-content">
+            <div class="sync-options">
+              <div class="force-reprocess-option">
+                <p-inputSwitch 
+                  id="forceReprocess"
+                  [ngModel]="forceReprocess()" 
+                  (ngModelChange)="forceReprocess.set($event)"
+                  [disabled]="syncStatus() === 'syncing'"
+                />
+                <label for="forceReprocess" class="option-label">
+                  <span class="label-text">Forzar reproceso con IA</span>
+                  <small class="label-hint">
+                    <i class="pi pi-info-circle"></i>
+                    Si está activado, todos los archivos (incluso los ya procesados) se volverán a analizar con IA. 
+                    Útil si has mejorado los prompts o quieres actualizar los datos extraídos.
+                  </small>
+                </label>
+              </div>
+            </div>
+            
+            <div class="sync-actions">
+              @if (syncStatus() !== 'syncing') {
+                <button 
+                  pButton 
+                  type="button" 
+                  label="Sincronizar ahora" 
+                  icon="pi pi-refresh"
+                  class="p-button-success"
+                  [loading]="syncing()"
+                  [disabled]="syncing()"
+                  (click)="syncNow()"
+                  pTooltip="Iniciar sincronización manual"
+                ></button>
+              } @else {
+                <button 
+                  pButton 
+                  type="button" 
+                  label="Cancelar sincronización" 
+                  icon="pi pi-times"
+                  class="p-button-warning"
+                  [loading]="syncing()"
+                  (click)="cancelSync()"
+                  pTooltip="Detener la sincronización actual"
+                ></button>
+              }
+
+              <button 
+                pButton 
+                type="button" 
+                label="Vaciar base de datos" 
+                icon="pi pi-trash"
+                class="p-button-danger"
+                [disabled]="syncing()"
+                (click)="clearDatabase()"
+                pTooltip="PELIGRO: Elimina TODOS los datos de la aplicación de forma permanente"
+              ></button>
+            </div>
+
+            <!-- Barra de progreso -->
+            @if (syncStatus() === 'syncing' || syncStatus() === 'completed' || syncStatus() === 'cancelled') {
+              <div class="sync-progress-container">
+                <div class="progress-header">
+                  <span class="progress-status">
+                    <i class="pi" [class.pi-spin]="syncStatus() === 'syncing'" 
+                       [class.pi-sync]="syncStatus() === 'syncing'"
+                       [class.pi-check-circle]="syncStatus() === 'completed'"
+                       [class.pi-times-circle]="syncStatus() === 'cancelled'"></i>
+                    {{ syncStatus() === 'syncing' ? 'Sincronizando...' : syncStatus() === 'cancelled' ? 'Cancelado' : 'Completado' }}
+                  </span>
+                  <span class="progress-count">
+                    {{ syncProcessedCount() }} / {{ syncTotalCount() }} archivos
+                  </span>
+                </div>
+                
+                <p-progressBar 
+                  [value]="syncProgress()" 
+                  [showValue]="true"
+                  [style]="{'height': '24px'}"
+                ></p-progressBar>
+                
+                @if (syncCurrentFile()) {
+                  <div class="current-file">
+                    <i class="pi pi-file"></i>
+                    <span>{{ syncCurrentFile() }}</span>
+                  </div>
+                }
+                
+                @if (syncMessage()) {
+                  <div class="sync-message">
+                    {{ syncMessage() }}
+                  </div>
+                }
+              </div>
+            }
+
+            @if (syncResult()) {
+              <p-message 
+                [severity]="syncResult()!.success ? 'success' : 'error'" 
+                [text]="syncResult()!.message"
+              />
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Historial de archivos sincronizados -->
+      <div class="files-section">
+        <div class="section-header" (click)="toggleHistory()">
+          <div class="section-title">
+            <i class="pi pi-history"></i>
+            <h3>Historial de sincronización</h3>
+          </div>
+          <i class="pi pi-angle-down collapse-icon" [class.rotated]="historyExpanded()"></i>
+        </div>
+
+        @if (historyExpanded()) {
+          <div class="section-content">
+        
+        @if (syncedFiles().length > 0) {
+          <p-table 
+            #dt
+            [value]="syncedFiles()" 
+            [paginator]="true" 
+            [rows]="10" 
+            [rowsPerPageOptions]="[10, 25, 50]"
+            [rowHover]="true"
+            [sortMode]="'multiple'"
+            [responsiveLayout]="'scroll'"
+            [globalFilterFields]="['fileName', 'filePath', 'status']"
+            styleClass="sync-history-table p-datatable-sm"
+          >
+            <ng-template pTemplate="caption">
+              <div class="table-caption">
+                <div class="caption-left">
+                  <span class="caption-title"><i class="pi pi-history"></i> Archivos Sincronizados</span>
+                  <span class="p-input-icon-left global-filter">
+                    <i class="pi pi-search"></i>
+                    <input 
+                      pInputText 
+                      type="text" 
+                      (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                      placeholder="Búsqueda global..."
+                    />
+                  </span>
+                </div>
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-text p-button-sm"
+                  icon="pi pi-filter-slash"
+                  label="Limpiar filtros"
+                  (click)="dt.reset()"
+                ></button>
+              </div>
+            </ng-template>
+
+            <ng-template pTemplate="header">
+              <tr>
+                <th pSortableColumn="fileName">Archivo <p-sortIcon field="fileName" /></th>
+                <th pSortableColumn="fileSize">Tamaño <p-sortIcon field="fileSize" /></th>
+                <th pSortableColumn="syncedAt">Sincronizado <p-sortIcon field="syncedAt" /></th>
+                <th pSortableColumn="status">Estado <p-sortIcon field="status" /></th>
+                <th class="actions-col">Acciones</th>
+              </tr>
+              <tr class="filter-row">
+                <th><input pInputText type="text" placeholder="Buscar archivo" (input)="dt.filter($any($event.target).value, 'fileName', 'contains')" /></th>
+                <th></th>
+                <th><input pInputText type="date" (input)="dt.filter($any($event.target).value, 'syncedAt', 'equals')" /></th>
+                <th>
+                  <select class="filter-select" (change)="dt.filter($any($event.target).value || null, 'status', 'equals')">
+                    <option value="">Todos</option>
+                    <option value="Completed">Completado</option>
+                    <option value="Processing">Procesando</option>
+                    <option value="Pending">Pendiente</option>
+                    <option value="Failed">Fallido</option>
+                    <option value="Skipped">Omitido</option>
+                  </select>
+                </th>
+                <th></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-file>
+              <tr>
+                <td>
+                  <div class="file-info">
+                    <i class="pi pi-file-pdf"></i>
+                    <span class="file-name" [pTooltip]="file.filePath">{{ file.fileName }}</span>
+                  </div>
+                </td>
+                <td>{{ formatFileSize(file.fileSize) }}</td>
+                <td>{{ formatDate(file.syncedAt) }}</td>
+                <td>
+                  <p-tag 
+                    [value]="getStatusLabel(file.status)" 
+                    [severity]="getStatusSeverity(file.status)"
+                    [pTooltip]="file.errorMessage"
+                  />
+                </td>
+                <td class="actions-col">
+                  <div class="action-buttons">
+                    <button
+                      pButton
+                      type="button"
+                      class="p-button-rounded p-button-text p-button-sm"
+                      icon="pi pi-eye"
+                      (click)="viewFile(file)"
+                      title="Ver archivo"
+                      [disabled]="file.status !== 'Completed' || !file.invoiceId"
+                      [pTooltip]="!file.invoiceId && file.status === 'Completed' ? 'No hay factura asociada' : ''"
+                    ></button>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="4" class="empty-message">
+                  <i class="pi pi-inbox"></i>
+                  No hay archivos sincronizados todavía
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+            } @else {
+              <div class="empty-state">
+                <i class="pi pi-inbox"></i>
+                <p>No hay archivos sincronizados todavía</p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Instrucciones de configuración -->
+    <div class="instructions">
+      <div class="section-header" (click)="toggleInstructions()">
+        <div class="section-title">
+          <i class="pi pi-info-circle"></i>
+          <h3>Cómo configurar Azure AD</h3>
+        </div>
+        <i class="pi pi-angle-down collapse-icon" [class.rotated]="instructionsExpanded()"></i>
+      </div>
+
+      @if (instructionsExpanded()) {
+        <div class="section-content">
+          <ol>
+        <li>
+          Ve al <a href="https://portal.azure.com" target="_blank">Portal de Azure</a> y accede con tu cuenta empresarial/educativa.
+        </li>
+        <li>
+          Navega a <strong>Azure Active Directory</strong> → <strong>App registrations</strong> → <strong>New registration</strong>.
+        </li>
+        <li>
+          Nombra tu aplicación (ej: "FresiaFlow OneDrive Sync") y selecciona <strong>Single tenant</strong>.
+        </li>
+        <li>
+          Una vez creada, copia el <strong>Application (client) ID</strong> y el <strong>Directory (tenant) ID</strong>.
+        </li>
+        <li>
+          Ve a <strong>Certificates & secrets</strong> → <strong>New client secret</strong> y copia el valor del secreto.
+        </li>
+        <li>
+          En <strong>API permissions</strong>, añade:
+          <ul>
+            <li><code>Files.Read.All</code> (Application)</li>
+            <li><code>Sites.Read.All</code> (Application) - si usas SharePoint</li>
+          </ul>
+        </li>
+            <li>
+              Haz clic en <strong>Grant admin consent</strong> para aprobar los permisos.
+            </li>
+          </ol>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+

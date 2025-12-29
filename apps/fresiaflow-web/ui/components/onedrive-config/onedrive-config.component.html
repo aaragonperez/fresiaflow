@@ -1,0 +1,382 @@
+<div class="onedrive-config">
+  <div class="config-header">
+    <div class="header-title">
+      <i class="pi pi-microsoft"></i>
+      <h2>Configuración de Sincronización OneDrive</h2>
+    </div>
+    <p class="header-description">
+      Configura las credenciales y ajustes para la sincronización automática de facturas desde OneDrive.
+      Para sincronizar manualmente o ver el historial, ve a <strong>Gestión > Importación</strong>.
+    </p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <p-progressSpinner strokeWidth="4" />
+      <p>Cargando configuración...</p>
+    </div>
+  } @else {
+    <!-- Estado actual -->
+    @if (config()?.configured) {
+      <div class="status-card" [class.enabled]="config()?.enabled" [class.disabled]="!config()?.enabled">
+        <div class="status-icon">
+          <i class="pi" [class.pi-check-circle]="config()?.enabled" [class.pi-times-circle]="!config()?.enabled"></i>
+        </div>
+        <div class="status-info">
+          <h3>{{ config()?.enabled ? 'Sincronización Automática Activa' : 'Sincronización Automática Desactivada' }}</h3>
+          <p>
+            @if (config()?.lastSyncAt) {
+              Última sincronización: {{ formatDate(config()!.lastSyncAt!) }}
+            } @else {
+              Nunca sincronizado
+            }
+          </p>
+          @if (config()?.lastSyncError) {
+            <p class="error-text">
+              <i class="pi pi-exclamation-triangle"></i>
+              {{ config()?.lastSyncError }}
+            </p>
+          }
+        </div>
+        <div class="status-stats">
+          <div class="stat">
+            <span class="stat-value">{{ config()?.totalFilesSynced || 0 }}</span>
+            <span class="stat-label">Archivos procesados</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Formulario de configuración -->
+    <div class="config-form">
+      <!-- Configuración de Azure AD -->
+      <div class="section-header" (click)="toggleAzureConfig()">
+        <div class="section-title">
+          <i class="pi pi-cog"></i>
+          <h3>Configuración de Azure AD</h3>
+        </div>
+        <i class="pi pi-angle-down collapse-icon" [class.rotated]="azureConfigExpanded()"></i>
+      </div>
+
+      @if (azureConfigExpanded()) {
+        <div class="section-content">
+          <p class="form-hint">
+            Para conectar con OneDrive, necesitas crear una aplicación en Azure AD. 
+            <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank">
+              Crear aplicación en Azure
+            </a>
+          </p>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="tenantId">
+                <i class="pi pi-building"></i> Tenant ID (Directory ID)
+                <span class="required">*</span>
+              </label>
+              <input 
+                pInputText 
+                id="tenantId" 
+                [ngModel]="tenantId()" 
+                (ngModelChange)="tenantId.set($event)"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="clientId">
+                <i class="pi pi-key"></i> Application (Client) ID
+                <span class="required">*</span>
+              </label>
+              <input 
+                pInputText 
+                id="clientId" 
+                [ngModel]="clientId()" 
+                (ngModelChange)="clientId.set($event)"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              />
+            </div>
+
+            <div class="form-group full-width">
+              <label for="clientSecret">
+                <i class="pi pi-lock"></i> Client Secret
+                <span class="required">*</span>
+                @if (config()?.hasClientSecret && !clientSecret()) {
+                  <span class="saved-indicator">✓ Ya configurado</span>
+                }
+              </label>
+              <input 
+                pInputText 
+                type="password"
+                id="clientSecret" 
+                [ngModel]="clientSecret()" 
+                (ngModelChange)="clientSecret.set($event)"
+                [placeholder]="config()?.hasClientSecret && !clientSecret() ? 'Dejar vacío para mantener el actual' : 'Introduce el Client Secret de tu aplicación'"
+              />
+              @if (config()?.hasClientSecret && !clientSecret()) {
+                <small class="hint-text">
+                  <i class="pi pi-info-circle"></i> 
+                  Ya existe un Client Secret guardado. Déjalo vacío para mantenerlo o ingresa uno nuevo para reemplazarlo.
+                </small>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Configuración de carpeta -->
+      <div class="section-header" (click)="toggleFolderConfig()">
+        <div class="section-title">
+          <i class="pi pi-folder"></i>
+          <h3>Carpeta de OneDrive</h3>
+        </div>
+        <i class="pi pi-angle-down collapse-icon" [class.rotated]="folderConfigExpanded()"></i>
+      </div>
+
+      @if (folderConfigExpanded()) {
+        <div class="section-content">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="folderPath">
+                <i class="pi pi-folder-open"></i> Ruta de la carpeta
+                <span class="required">*</span>
+              </label>
+              <input 
+                pInputText 
+                id="folderPath" 
+                [ngModel]="folderPath()" 
+                (ngModelChange)="folderPath.set($event)"
+                placeholder="Facturas/2025"
+              />
+              <small>Ruta relativa desde la raíz de OneDrive</small>
+            </div>
+
+            <div class="form-group">
+              <label for="driveId">
+                <i class="pi pi-database"></i> Drive ID (opcional)
+              </label>
+              <input 
+                pInputText 
+                id="driveId" 
+                [ngModel]="driveId()" 
+                (ngModelChange)="driveId.set($event)"
+                placeholder="Para SharePoint o Teams"
+              />
+              <small>Solo necesario si usas SharePoint/Teams en lugar de OneDrive personal</small>
+            </div>
+          </div>
+
+          <div class="validation-hint">
+            <i class="pi pi-info-circle"></i>
+            <p>Para validar la configuración, guarda los cambios y luego ve a <strong>Gestión > Importación</strong> para probar la sincronización.</p>
+          </div>
+        </div>
+      }
+
+      <!-- Sincronización automática -->
+      <div class="section-header" (click)="toggleAutomaticSync()">
+        <div class="section-title">
+          <i class="pi pi-clock"></i>
+          <h3>Sincronización Automática</h3>
+        </div>
+        <i class="pi pi-angle-down collapse-icon" [class.rotated]="automaticSyncExpanded()"></i>
+      </div>
+
+      @if (automaticSyncExpanded()) {
+        <div class="section-content">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="enabled">
+                <i class="pi pi-power-off"></i> Activar sincronización automática
+              </label>
+              <p-inputSwitch 
+                id="enabled"
+                [ngModel]="enabled()" 
+                (ngModelChange)="enabled.set($event)"
+              />
+              <small>Sincroniza automáticamente nuevos archivos cada cierto tiempo</small>
+            </div>
+
+            <div class="form-group">
+              <label for="syncInterval">
+                <i class="pi pi-refresh"></i> Intervalo de sincronización (minutos)
+              </label>
+              <p-inputNumber
+                id="syncInterval"
+                [ngModel]="syncIntervalMinutes()"
+                (ngModelChange)="syncIntervalMinutes.set($event)"
+                [min]="5"
+                [max]="1440"
+                [showButtons]="true"
+                [disabled]="!enabled()"
+              />
+              <small>Mínimo 5 minutos, máximo 24 horas (1440 minutos)</small>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Botones de acción -->
+      <div class="form-actions">
+        <button 
+          pButton 
+          label="Guardar configuración" 
+          icon="pi pi-save"
+          class="p-button-success"
+          (click)="saveConfig()"
+        ></button>
+      </div>
+
+      @if (saveSuccess()) {
+        <p-message 
+          severity="success" 
+          text="Configuración guardada correctamente"
+        ></p-message>
+      }
+
+      @if (error()) {
+        <p-message 
+          severity="error" 
+          [text]="error()!"
+        ></p-message>
+      }
+    </div>
+
+    <!-- Zona de peligro -->
+    <div class="section-header danger-header" (click)="toggleDangerZone()">
+      <div class="section-title">
+        <i class="pi pi-exclamation-triangle"></i>
+        <h3>Zona de Peligro</h3>
+      </div>
+      <i class="pi pi-angle-down collapse-icon" [class.rotated]="dangerZoneExpanded()"></i>
+    </div>
+
+    @if (dangerZoneExpanded()) {
+      <div class="section-content danger-zone">
+        <div class="danger-warning">
+          <i class="pi pi-exclamation-triangle"></i>
+          <p>
+            <strong>¡ATENCIÓN!</strong> Las acciones en esta sección son irreversibles y eliminarán datos permanentemente.
+          </p>
+        </div>
+
+        <div class="danger-action">
+          <div class="danger-action-info">
+            <h4>Vaciar Base de Datos</h4>
+            <p>Elimina TODOS los datos: facturas, archivos sincronizados, pagos y configuraciones. Esta acción no se puede deshacer.</p>
+          </div>
+          <button 
+            pButton 
+            label="Vaciar Base de Datos" 
+            icon="pi pi-trash"
+            class="p-button-danger"
+            (click)="openClearDialog()"
+          ></button>
+        </div>
+      </div>
+    }
+
+    <!-- Instrucciones -->
+    <div class="section-header" (click)="toggleInstructions()">
+      <div class="section-title">
+        <i class="pi pi-question-circle"></i>
+        <h3>Instrucciones de configuración</h3>
+      </div>
+      <i class="pi pi-angle-down collapse-icon" [class.rotated]="instructionsExpanded()"></i>
+    </div>
+
+    @if (instructionsExpanded()) {
+      <div class="section-content instructions">
+        <ol>
+          <li>
+            <strong>Crear aplicación en Azure AD:</strong>
+            <p>Ve al <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank">Portal de Azure</a> y registra una nueva aplicación.</p>
+          </li>
+          <li>
+            <strong>Configurar permisos:</strong>
+            <p>En "API permissions", añade: <code>Files.Read.All</code>, <code>Sites.Read.All</code> (tipo Application).</p>
+          </li>
+          <li>
+            <strong>Crear Client Secret:</strong>
+            <p>En "Certificates & secrets", crea un nuevo Client Secret y cópialo inmediatamente.</p>
+          </li>
+          <li>
+            <strong>Copiar IDs:</strong>
+            <p>Desde "Overview", copia el Tenant ID y el Application (Client) ID.</p>
+          </li>
+          <li>
+            <strong>Configurar aquí:</strong>
+            <p>Pega los valores en este formulario y guarda. Luego ve a <strong>Gestión > Importación</strong> para sincronizar.</p>
+          </li>
+        </ol>
+      </div>
+    }
+  }
+
+  <!-- Diálogo de confirmación para vaciar base de datos -->
+  <p-dialog 
+    [(visible)]="clearDialogVisible" 
+    [modal]="true" 
+    [style]="{width: '520px'}"
+    styleClass="clear-db-dialog"
+    header="⚠️ Confirmar vaciado de base de datos"
+    [draggable]="false"
+    [resizable]="false"
+    [closable]="!clearingDatabase()"
+  >
+    <div class="clear-dialog-content">
+      <div class="clear-warning">
+        <i class="pi pi-exclamation-triangle"></i>
+        <div class="warning-text">
+          <p>Esta acción eliminará TODOS los datos:</p>
+          <ul>
+            <li>Todas las facturas recibidas</li>
+            <li>Todos los archivos sincronizados</li>
+            <li>Todos los pagos registrados</li>
+            <li>Historial de transacciones</li>
+          </ul>
+          <p class="no-undo">Esta acción NO se puede deshacer.</p>
+        </div>
+      </div>
+
+      <div class="confirm-input">
+        <label for="confirmCode">Para confirmar, escribe <code>DELETE_ALL_DATA</code>:</label>
+        <input 
+          pInputText 
+          id="confirmCode"
+          [ngModel]="clearConfirmCode()" 
+          (ngModelChange)="clearConfirmCode.set($event)"
+          placeholder="DELETE_ALL_DATA"
+          [disabled]="clearingDatabase()"
+        />
+      </div>
+
+      @if (clearResult()) {
+        <p-message 
+          [severity]="clearResult()!.success ? 'success' : 'error'"
+          [text]="clearResult()!.message"
+        ></p-message>
+      }
+    </div>
+
+    <ng-template pTemplate="footer">
+      <button 
+        pButton 
+        label="Cancelar" 
+        icon="pi pi-times"
+        class="p-button-text"
+        (click)="closeClearDialog()"
+        [disabled]="clearingDatabase()"
+      ></button>
+      <button 
+        pButton 
+        label="Vaciar Base de Datos" 
+        icon="pi pi-trash"
+        class="p-button-danger"
+        (click)="clearDatabase()"
+        [loading]="clearingDatabase()"
+        [disabled]="clearConfirmCode() !== 'DELETE_ALL_DATA' || clearingDatabase()"
+      ></button>
+    </ng-template>
+  </p-dialog>
+</div>
+

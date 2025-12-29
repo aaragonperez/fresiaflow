@@ -13,8 +13,13 @@ public class OpenAiOptions
     public string ApiKey { get; set; } = string.Empty;
 
     /// <summary>
-    /// Modelo a utilizar (ej: gpt-4, gpt-3.5-turbo).
+    /// Modelo económico por defecto.
     /// </summary>
     public string Model { get; set; } = "gpt-4";
+
+    /// <summary>
+    /// Modelo de alta precisión reservado para el fallback (<15% de documentos).
+    /// </summary>
+    public string? FallbackModel { get; set; } = "gpt-4o";
 }
 

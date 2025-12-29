@@ -15,6 +15,7 @@ public interface IInvoiceReceivedRepository
     Task<IEnumerable<InvoiceReceived>> GetByYearAsync(int year, CancellationToken cancellationToken = default);
     Task<IEnumerable<InvoiceReceived>> GetByQuarterAsync(int year, int quarter, CancellationToken cancellationToken = default);
     Task<IEnumerable<InvoiceReceived>> GetBySupplierAsync(string supplierName, CancellationToken cancellationToken = default);
+    Task<IEnumerable<InvoiceReceived>> GetByExactSupplierNameAsync(string supplierName, CancellationToken cancellationToken = default);
     Task<IEnumerable<InvoiceReceived>> GetByPaymentTypeAsync(PaymentType paymentType, CancellationToken cancellationToken = default);
     
     // Métodos combinados para filtros complejos
@@ -27,5 +28,6 @@ public interface IInvoiceReceivedRepository
     
     Task AddAsync(InvoiceReceived invoiceReceived, CancellationToken cancellationToken = default);
     Task UpdateAsync(InvoiceReceived invoiceReceived, CancellationToken cancellationToken = default);
+    Task UpdateManyAsync(IEnumerable<InvoiceReceived> invoices, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

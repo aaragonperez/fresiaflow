@@ -1,4 +1,4 @@
-import { DashboardTask } from '../domain/dashboard.model';
+import { DashboardTask, TaskPriority } from '../domain/dashboard.model';
 import { BankSummary } from '../domain/dashboard.model';
 import { Alert } from '../domain/dashboard.model';
 
@@ -24,5 +24,25 @@ export interface DashboardApiPort {
    * @returns Lista de alertas ordenadas por severidad y fecha.
    */
   getAlerts(): Promise<Alert[]>;
+
+  /**
+   * Marca una tarea como completada.
+   */
+  completeTask(taskId: string): Promise<void>;
+
+  /**
+   * Desmarca una tarea como completada.
+   */
+  uncompleteTask(taskId: string): Promise<void>;
+
+  /**
+   * Actualiza la prioridad de una tarea.
+   */
+  updateTaskPriority(taskId: string, priority: TaskPriority): Promise<void>;
+
+  /**
+   * Alterna el estado de fijado de una tarea.
+   */
+  toggleTaskPin(taskId: string): Promise<{ isPinned: boolean }>;
 }
 

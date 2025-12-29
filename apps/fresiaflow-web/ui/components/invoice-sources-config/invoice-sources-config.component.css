@@ -1,0 +1,262 @@
+.invoice-sources-config {
+  padding: 1.5rem;
+}
+
+.config-header {
+  margin-bottom: 2rem;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.header-title i {
+  font-size: 1.75rem;
+  color: var(--primary-color);
+}
+
+.header-title h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-color);
+}
+
+.header-description {
+  color: var(--text-color);
+  opacity: 0.7;
+  margin: 0;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--secondary-color);
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: background 0.2s;
+}
+
+.section-header:hover {
+  background: var(--surface-hover);
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-title i {
+  color: var(--primary-color);
+}
+
+.section-title h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-color);
+}
+
+.collapse-icon {
+  transition: transform 0.3s;
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+.collapse-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.section-content {
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--secondary-color);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.empty-message {
+  text-align: center;
+  color: var(--text-color);
+  opacity: 0.7;
+  padding: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--text-color);
+  opacity: 0.7;
+  font-size: 0.875rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.global-actions {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--secondary-color);
+}
+
+.preview-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--surface-ground);
+  border-radius: 8px;
+}
+
+.preview-card h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--text-color);
+}
+
+.dialog-content {
+  padding: 1rem 0;
+}
+
+.actions-col {
+  width: 120px;
+  text-align: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+:host ::ng-deep .action-buttons .p-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+:host ::ng-deep .action-buttons .p-button .pi {
+  font-size: 0.8rem;
+}
+
+:host ::ng-deep .action-buttons .p-button:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+}
+
+:host ::ng-deep .action-buttons .p-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.w-full {
+  width: 100%;
+}
+
+/* Sync progress styles */
+.sync-progress {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--secondary-color);
+  border-radius: 8px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.progress-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.progress-status i {
+  font-size: 1.1rem;
+}
+
+.progress-count {
+  color: var(--text-color);
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.current-file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: var(--surface-ground);
+  border-radius: 4px;
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.current-file i {
+  color: var(--primary-color);
+}
+
+.sync-message-container {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sync-message {
+  display: block;
+  color: var(--text-color);
+  opacity: 0.8;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.resume-button {
+  align-self: flex-start;
+}
+

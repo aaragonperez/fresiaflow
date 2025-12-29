@@ -27,12 +27,12 @@ public class MoneyTests
     }
 
     [Fact]
-    public void Constructor_WithNegativeValue_ShouldThrowException()
+    public void Constructor_WithNegativeValue_ShouldAllowNegativeAmounts()
     {
-        // Act & Assert
-        var act = () => new Money(-100m, "EUR");
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("El valor no puede ser negativo.*");
+        var money = new Money(-100m, "EUR");
+
+        money.Value.Should().Be(-100m);
+        money.Currency.Should().Be("EUR");
     }
 
     [Fact]

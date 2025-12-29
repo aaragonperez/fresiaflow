@@ -22,6 +22,132 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("FresiaFlow.Domain.Accounting.AccountingAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("AccountingAccounts");
+                });
+
+            modelBuilder.Entity("FresiaFlow.Domain.Accounting.AccountingEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("EntryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("EntryNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("EntryYear")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("InvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsReversed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Reference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("ReversedByEntryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EntryDate");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.HasIndex("EntryYear", "EntryNumber");
+
+                    b.HasIndex("Status", "Source");
+
+                    b.ToTable("AccountingEntries");
+                });
+
+            modelBuilder.Entity("FresiaFlow.Domain.Accounting.AccountingEntryLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountingAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountingEntryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Side")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountingAccountId");
+
+                    b.HasIndex("AccountingEntryId");
+
+                    b.ToTable("AccountingEntryLines");
+                });
+
             modelBuilder.Entity("FresiaFlow.Domain.Banking.BankAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -219,6 +345,107 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                     b.ToTable("IssuedInvoices");
                 });
 
+            modelBuilder.Entity("FresiaFlow.Domain.InvoicesReceived.InvoiceProcessingSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ClassificationCompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("ClassificationConfidence")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("ClassificationJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DocumentLanguage")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("DocumentType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("ExtractionCompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("ExtractionConfidence")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("ExtractionHash")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ExtractionJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("ExtractionVersion")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTime?>("FallbackCompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FallbackReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("FallbackTriggered")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("OcrCompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("OcrConfidence")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("OcrLayoutJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("OcrText")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SourceFileHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("SourceFilePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("SupplierCandidate")
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ValidationCompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ValidationErrors")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ValidationStatus")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceFileHash")
+                        .IsUnique();
+
+                    b.HasIndex("SourceFilePath");
+
+                    b.ToTable("InvoiceProcessingSnapshots", (string)null);
+                });
+
             modelBuilder.Entity("FresiaFlow.Domain.InvoicesReceived.InvoiceReceived", b =>
                 {
                     b.Property<Guid>("Id")
@@ -241,6 +468,10 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<decimal?>("IrpfRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
 
                     b.Property<DateTime>("IssueDate")
                         .HasColumnType("timestamp with time zone");
@@ -293,8 +524,7 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("InvoiceNumber")
-                        .IsUnique();
+                    b.HasIndex("InvoiceNumber");
 
                     b.ToTable("InvoicesReceived", (string)null);
                 });
@@ -346,9 +576,6 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                     b.Property<Guid>("InvoiceReceivedId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("InvoiceReceivedId1")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -357,8 +584,6 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                     b.HasIndex("BankTransactionId");
 
                     b.HasIndex("InvoiceReceivedId");
-
-                    b.HasIndex("InvoiceReceivedId1");
 
                     b.HasIndex("PaymentDate");
 
@@ -388,6 +613,163 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                     b.ToTable("ReconciliationCandidates");
                 });
 
+            modelBuilder.Entity("FresiaFlow.Domain.Sync.InvoiceSourceConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ConfigJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastSyncAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastSyncError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("SourceType")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalFilesSynced")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceType", "Name");
+
+                    b.ToTable("InvoiceSourceConfigs");
+                });
+
+            modelBuilder.Entity("FresiaFlow.Domain.Sync.OneDriveSyncConfig", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ClientSecret")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DriveId")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("FolderPath")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("LastSyncAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastSyncError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<int>("SyncIntervalMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TenantId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("TotalFilesSynced")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OneDriveSyncConfigs");
+                });
+
+            modelBuilder.Entity("FresiaFlow.Domain.Sync.SyncedFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("ExternalModifiedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileHash")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("InvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SyncedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FileHash");
+
+                    b.HasIndex("Source", "ExternalId")
+                        .IsUnique();
+
+                    b.ToTable("SyncedFiles");
+                });
+
             modelBuilder.Entity("FresiaFlow.Domain.Tasks.TaskItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -401,13 +783,19 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsCompleted")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPinned")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("Priority")
                         .HasColumnType("integer");
@@ -425,7 +813,51 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tasks");
+                    b.HasIndex("IsCompleted", "IsPinned", "Priority");
+
+                    b.ToTable("Tasks", (string)null);
+                });
+
+            modelBuilder.Entity("FresiaFlow.Domain.Accounting.AccountingEntryLine", b =>
+                {
+                    b.HasOne("FresiaFlow.Domain.Accounting.AccountingAccount", null)
+                        .WithMany()
+                        .HasForeignKey("AccountingAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FresiaFlow.Domain.Accounting.AccountingEntry", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("AccountingEntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("FresiaFlow.Domain.Shared.Money", "Amount", b1 =>
+                        {
+                            b1.Property<Guid>("AccountingEntryLineId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("Currency");
+
+                            b1.Property<decimal>("Value")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("Amount");
+
+                            b1.HasKey("AccountingEntryLineId");
+
+                            b1.ToTable("AccountingEntryLines");
+
+                            b1.WithOwner()
+                                .HasForeignKey("AccountingEntryLineId");
+                        });
+
+                    b.Navigation("Amount")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FresiaFlow.Domain.Banking.BankTransaction", b =>
@@ -580,6 +1012,30 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
 
             modelBuilder.Entity("FresiaFlow.Domain.InvoicesReceived.InvoiceReceived", b =>
                 {
+                    b.OwnsOne("FresiaFlow.Domain.Shared.Money", "IrpfAmount", b1 =>
+                        {
+                            b1.Property<Guid>("InvoiceReceivedId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("IrpfCurrency");
+
+                            b1.Property<decimal>("Value")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("IrpfAmount");
+
+                            b1.HasKey("InvoiceReceivedId");
+
+                            b1.ToTable("InvoicesReceived");
+
+                            b1.WithOwner()
+                                .HasForeignKey("InvoiceReceivedId");
+                        });
+
                     b.OwnsOne("FresiaFlow.Domain.Shared.Money", "SubtotalAmount", b1 =>
                         {
                             b1.Property<Guid>("InvoiceReceivedId")
@@ -651,6 +1107,8 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                             b1.WithOwner()
                                 .HasForeignKey("InvoiceReceivedId");
                         });
+
+                    b.Navigation("IrpfAmount");
 
                     b.Navigation("SubtotalAmount")
                         .IsRequired();
@@ -728,15 +1186,9 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
 
             modelBuilder.Entity("FresiaFlow.Domain.InvoicesReceived.InvoiceReceivedPayment", b =>
                 {
-                    b.HasOne("FresiaFlow.Domain.InvoicesReceived.InvoiceReceived", null)
+                    b.HasOne("FresiaFlow.Domain.InvoicesReceived.InvoiceReceived", "InvoiceReceived")
                         .WithMany("Payments")
                         .HasForeignKey("InvoiceReceivedId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FresiaFlow.Domain.InvoicesReceived.InvoiceReceived", "InvoiceReceived")
-                        .WithMany()
-                        .HasForeignKey("InvoiceReceivedId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -768,6 +1220,11 @@ namespace FresiaFlow.Adapters.Outbound.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("InvoiceReceived");
+                });
+
+            modelBuilder.Entity("FresiaFlow.Domain.Accounting.AccountingEntry", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("FresiaFlow.Domain.Banking.BankAccount", b =>

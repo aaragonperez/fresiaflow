@@ -7,6 +7,8 @@ namespace FresiaFlow.Application.Ports.Outbound;
 /// </summary>
 public interface IInvoiceExtractionService
 {
-    Task<InvoiceExtractionResultDto> ExtractInvoiceDataAsync(string text, CancellationToken cancellationToken = default);
+    Task<InvoiceExtractionResultDto> ExtractInvoiceDataAsync(
+        InvoiceExtractionRequest request,
+        CancellationToken cancellationToken = default);
 }
 

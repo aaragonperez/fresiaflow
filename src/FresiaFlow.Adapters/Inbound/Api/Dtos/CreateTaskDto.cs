@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using FresiaFlow.Domain.Tasks;
 
 namespace FresiaFlow.Adapters.Inbound.Api.Dtos;
 
@@ -21,11 +22,23 @@ public class CreateTaskDto
     public string? Description { get; set; }
 
     /// <summary>
-    /// Prioridad de la tarea. Valores válidos: Low (0), Medium (1), High (2), Urgent (3).
-    /// Por defecto es Medium (1).
+    /// Prioridad de la tarea.
     /// </summary>
-    [Required(ErrorMessage = "La prioridad es requerida.")]
-    [Range(0, 3, ErrorMessage = "La prioridad debe estar entre 0 (Low) y 3 (Urgent).")]
-    public int Priority { get; set; } = 1;
+    public TaskPriority Priority { get; set; } = TaskPriority.Medium;
+
+    /// <summary>
+    /// Fecha de vencimiento opcional.
+    /// </summary>
+    public DateTime? DueDate { get; set; }
+
+    /// <summary>
+    /// ID de factura relacionada (opcional).
+    /// </summary>
+    public Guid? RelatedInvoiceId { get; set; }
+
+    /// <summary>
+    /// ID de transacción bancaria relacionada (opcional).
+    /// </summary>
+    public Guid? RelatedTransactionId { get; set; }
 }
 

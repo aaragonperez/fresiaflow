@@ -77,6 +77,9 @@ Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin text
   ""dueDate"": ""YYYY-MM-DD o null"",
   ""totalAmount"": number,
   ""taxAmount"": number o null,
+  ""taxRate"": number o null,
+  ""irpfAmount"": number o null,
+  ""irpfRate"": number o null,
   ""subtotalAmount"": number o null,
   ""currency"": ""EUR"",
   ""lines"": [
@@ -99,6 +102,11 @@ Reglas:
 - El currency por defecto es EUR si no se especifica
 - Si no hay líneas detalladas, devuelve array vacío
 - NUNCA uses como supplierName ninguna de las empresas propias listadas arriba
+- taxAmount es el importe de IVA (Impuesto sobre el Valor Añadido)
+- taxRate es el porcentaje de IVA (ej: 21, 10, 4)
+- irpfAmount es la retención de IRPF (Impuesto sobre la Renta) que se RESTA del total - común en facturas de autónomos/profesionales
+- irpfRate es el porcentaje de IRPF (ej: 15, 7)
+- El totalAmount debe ser: subtotalAmount + taxAmount - irpfAmount
 - Devuelve SOLO el JSON, sin markdown ni texto adicional";
 }
 

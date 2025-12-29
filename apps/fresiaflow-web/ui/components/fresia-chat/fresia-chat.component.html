@@ -1,6 +1,6 @@
 <!-- Botón flotante para abrir el chat -->
 @if (!isOpen()) {
-  <button class="chat-toggle-btn" (click)="toggleChat()" title="Abrir asistente de facturas">
+  <button class="chat-toggle-btn" (click)="toggleChat()" [title]="'Abrir ' + chatTitle()">
     <i class="pi pi-comment"></i>
   </button>
 }
@@ -11,7 +11,7 @@
     <div class="chat-header">
       <div class="chat-header-content">
         <i class="pi pi-comment"></i>
-        <h3>Asistente de Facturas</h3>
+        <h3>{{ chatTitle() }}</h3>
       </div>
       <div class="chat-header-actions">
         @if (messages().length > 0) {
@@ -31,8 +31,8 @@
           <div class="welcome-icon">
             <i class="pi pi-bolt"></i>
           </div>
-          <h4>¡Hola! Soy tu asistente</h4>
-          <p>Puedo ayudarte a analizar tus facturas y responder preguntas sobre tus datos financieros.</p>
+          <h4>¡Hola! Soy tu asistente IA</h4>
+          <p>Puedo ayudarte con cualquier pregunta sobre la sección actual o tus datos.</p>
           <div class="suggestion-chips">
             <button class="chip" (click)="askSuggestion('¿Qué proveedor me factura más?')">
               ¿Qué proveedor me factura más?

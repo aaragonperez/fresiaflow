@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --proxy-config proxy.conf.json",
     "build": "ng build",
-    "test": "ng test"
+    "test": "ng test",
+    "e2e": "cypress open --browser chrome",
+    "e2e:headless": "cypress run --browser chrome --headless",
+    "e2e:electron": "cypress open",
+    "e2e:electron:headless": "cypress run"
   },
   "private": true,
   "dependencies": {
@@ -17,6 +21,7 @@
     "@angular/platform-browser": "^17.0.0",
     "@angular/platform-browser-dynamic": "^17.0.0",
     "@angular/router": "^17.0.0",
+    "@microsoft/signalr": "^10.0.0",
     "primeicons": "^6.0.1",
     "primeng": "^17.18.15",
     "rxjs": "~7.8.0",
@@ -27,6 +32,7 @@
     "@angular-devkit/build-angular": "^17.0.0",
     "@angular/cli": "^17.0.0",
     "@angular/compiler-cli": "^17.0.0",
+    "cypress": "^15.8.1",
     "typescript": "~5.2.0"
   }
 }

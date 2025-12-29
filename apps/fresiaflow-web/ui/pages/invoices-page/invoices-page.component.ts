@@ -1,12 +1,14 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { InvoiceFacade } from '../../../application/invoice.facade';
 import { InvoiceTableComponent } from '../../components/invoice-table/invoice-table.component';
 import { InvoiceEditDialogComponent } from '../../components/invoice-edit-dialog/invoice-edit-dialog.component';
 import { Invoice, PaymentType } from '../../../domain/invoice.model';
 import { InvoiceFilter } from '../../../ports/invoice.api.port';
+import { ChatActionService } from '../../../application/chat-action.service';
 
 /**
  * Componente de página para gestión de facturas recibidas.
@@ -19,10 +21,13 @@ import { InvoiceFilter } from '../../../ports/invoice.api.port';
   templateUrl: './invoices-page.component.html',
   styleUrls: ['./invoices-page.component.css']
 })
-export class InvoicesPageComponent implements OnInit {
+export class InvoicesPageComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private actionService = inject(ChatActionService);
   facade = inject(InvoiceFacade);
+  
+  private actionSubscription?: Subscription;
   
   invoices = this.facade.invoices;
   loading = this.facade.loading;
@@ -52,8 +57,11 @@ export class InvoicesPageComponent implements OnInit {
   editingInvoice = signal<Invoice | null>(null);
   editDialogVisible = signal<boolean>(false);
 
-  // Años disponibles (últimos 5 años)
-  readonly availableYears = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+  // Años disponibles (desde 2014 hasta el año actual)
+  readonly availableYears = Array.from(
+    { length: new Date().getFullYear() - 2014 + 1 }, 
+    (_, i) => 2014 + i
+  ).reverse();
   readonly quarters = [1, 2, 3, 4];
 
   ngOnInit(): void {
@@ -72,6 +80,15 @@ export class InvoicesPageComponent implements OnInit {
         }
       });
     });
+
+    // Suscribirse a acciones del chat
+    this.actionSubscription = this.actionService.action$.subscribe(action => {
+      this.executeChatAction(action);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.actionSubscription?.unsubscribe();
   }
 
   /**
@@ -316,6 +333,17 @@ export class InvoicesPageComponent implements OnInit {
     (document.getElementById('fileInput') as HTMLInputElement).value = '';
   }
 
+  async onViewInvoice(invoice: Invoice): Promise<void> {
+    try {
+      const blob = await this.facade.downloadInvoice(invoice.id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch (err: any) {
+      alert('Error al abrir el archivo: ' + (err.message || 'Error desconocido'));
+    }
+  }
+
   async onDeleteInvoice(id: string): Promise<void> {
     if (confirm('¿Estás seguro de que quieres eliminar esta factura?')) {
       try {
@@ -342,14 +370,65 @@ export class InvoicesPageComponent implements OnInit {
       this.editingInvoice.set(null);
       // Recargar facturas para reflejar los cambios
       await this.loadInvoices();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al actualizar factura:', error);
-      alert('Error al actualizar la factura. Por favor, inténtalo de nuevo.');
+      const errorMessage = error?.error?.error || error?.message || 'Error desconocido al actualizar la factura';
+      alert(`Error al actualizar la factura: ${errorMessage}`);
     }
   }
 
   onCancelEdit(): void {
     this.editDialogVisible.set(false);
     this.editingInvoice.set(null);
+  }
+
+  /**
+   * Ejecuta una acción recibida del chat IA.
+   */
+  executeChatAction(action: { type: string; params: Record<string, any> }): void {
+    console.log('Ejecutando acción del chat:', action);
+
+    switch (action.type) {
+      case 'applyInvoiceFilter':
+        // Aplicar filtros de facturas
+        const params = action.params;
+        
+        if (params.year !== undefined && params.year !== null) {
+          this.filterYear.set(Number(params.year));
+        }
+        
+        if (params.quarter !== undefined && params.quarter !== null) {
+          this.filterQuarter.set(Number(params.quarter));
+        }
+        
+        if (params.supplierName !== undefined && params.supplierName !== null) {
+          this.filterSupplier.set(String(params.supplierName));
+        }
+        
+        if (params.paymentType !== undefined && params.paymentType !== null) {
+          this.filterPaymentType.set(String(params.paymentType));
+        }
+        
+        // Cargar facturas con los nuevos filtros
+        this.loadInvoices();
+        break;
+
+      case 'navigateToPage':
+        // Navegar a una página específica
+        if (action.params.route) {
+          this.router.navigate([action.params.route]);
+        }
+        break;
+
+      case 'openInvoice':
+        // Abrir una factura específica
+        if (action.params.invoiceId) {
+          this.openInvoiceForEdit(String(action.params.invoiceId));
+        }
+        break;
+
+      default:
+        console.warn('Acción desconocida del chat:', action.type);
+    }
   }
 }

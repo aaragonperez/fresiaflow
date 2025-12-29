@@ -18,11 +18,32 @@ public record UpdateInvoiceCommand(
     string? SupplierName = null,
     string? SupplierTaxId = null,
     DateTime? IssueDate = null,
+    DateTime? ReceivedDate = null,
     DateTime? DueDate = null,
+    string? SupplierAddress = null,
     decimal? TotalAmount = null,
     decimal? TaxAmount = null,
+    decimal? TaxRate = null,
+    decimal? IrpfAmount = null,
+    decimal? IrpfRate = null,
     decimal? SubtotalAmount = null,
     string? Currency = null,
-    string? Notes = null
+    string? Notes = null,
+    IEnumerable<UpdateInvoiceLineCommand>? Lines = null
+);
+
+/// <summary>
+/// Comando para reemplazar líneas de detalle de una factura.
+/// </summary>
+public record UpdateInvoiceLineCommand(
+    Guid? Id,
+    int LineNumber,
+    string Description,
+    decimal Quantity,
+    decimal UnitPrice,
+    string? UnitPriceCurrency,
+    decimal? TaxRate,
+    decimal LineTotal,
+    string? LineTotalCurrency
 );
 

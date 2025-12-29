@@ -1,10 +1,24 @@
 <div class="tasks-widget">
   <div class="widget-header">
-    <h3 class="widget-title">
-      <i class="pi pi-check-square"></i>
-      Tareas Pendientes
-    </h3>
-    <span class="task-count">{{ tasks.length }}</span>
+    <div class="header-left">
+      <h3 class="widget-title">
+        <i class="pi pi-check-square"></i>
+        Tareas Pendientes
+      </h3>
+      <span class="task-count" [class.has-pending]="pendingCount > 0">{{ pendingCount }}</span>
+    </div>
+    <div class="header-actions">
+      <!-- Filtro de prioridad -->
+      <select 
+        class="priority-filter" 
+        [ngModel]="priorityFilter()" 
+        (ngModelChange)="onPriorityFilterChange($event)"
+        title="Filtrar por prioridad">
+        @for (option of priorityOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
   </div>
 
   @if (loading) {
@@ -17,36 +31,65 @@
       <i class="pi pi-exclamation-triangle"></i>
       <span>{{ error }}</span>
     </div>
-  } @else if (tasks.length === 0) {
+  } @else if (filteredTasks.length === 0) {
     <div class="empty-state">
       <i class="pi pi-check-circle"></i>
-      <p>No hay tareas pendientes</p>
+      @if (priorityFilter() !== 'all') {
+        <p>No hay tareas con prioridad {{ getPriorityText(priorityFilter()) }}</p>
+      } @else {
+        <p>No hay tareas pendientes</p>
+      }
     </div>
   } @else {
     <div class="tasks-list">
-      @for (task of tasks; track task.id) {
+      @for (task of paginatedTasks; track task.id) {
         <div class="task-item" 
              [class.overdue]="isOverdue(task)"
+             [class.completed]="task.status === TaskStatus.Completed"
+             [class.pinned]="task.isPinned"
              [class.clickable]="task.type === TaskType.Invoice"
              (click)="onTaskClick(task)"
              [attr.role]="task.type === TaskType.Invoice ? 'button' : null"
              [attr.tabindex]="task.type === TaskType.Invoice ? 0 : null">
-          <div class="task-icon">
-            <i [class]="'pi ' + getTaskTypeIcon(task.type)"></i>
+          
+          <!-- Checkbox de completado -->
+          <div class="task-checkbox" (click)="onToggleComplete(task, $event)">
+            <i [class]="task.status === TaskStatus.Completed ? 'pi pi-check-circle' : 'pi pi-circle'"
+               [class.completed]="task.status === TaskStatus.Completed"></i>
           </div>
+
+          <div class="task-icon" [class.pinned]="task.isPinned">
+            @if (task.isPinned) {
+              <i class="pi pi-star-fill pinned-icon"></i>
+            } @else {
+              <i [class]="'pi ' + getTaskTypeIcon(task.type)"></i>
+            }
+          </div>
+          
           <div class="task-content">
             <div class="task-header">
-              <h4 class="task-title">{{ task.title }}</h4>
+              <h4 class="task-title" [class.completed]="task.status === TaskStatus.Completed">
+                {{ task.title }}
+              </h4>
               <span class="task-type-badge">{{ getTaskTypeText(task.type) }}</span>
             </div>
             @if (task.description) {
               <p class="task-description">{{ task.description }}</p>
             }
             <div class="task-footer">
-              <span class="task-priority" [class]="getPriorityClass(task.priority)">
-                <i class="pi pi-flag"></i>
-                {{ getPriorityText(task.priority) }}
-              </span>
+              <!-- Selector de prioridad -->
+              <div class="priority-selector" (click)="$event.stopPropagation()">
+                <select 
+                  class="priority-select" 
+                  [class]="getPriorityClass(task.priority)"
+                  [ngModel]="task.priority"
+                  (ngModelChange)="onPriorityChange(task, $event, $event)"
+                  title="Cambiar prioridad">
+                  @for (option of priorityChangeOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+              </div>
               @if (task.dueDate) {
                 <span class="task-due-date" [class.overdue]="isOverdue(task)">
                   <i class="pi pi-calendar"></i>
@@ -55,14 +98,49 @@
               }
             </div>
           </div>
-          @if (task.type === TaskType.Invoice) {
-            <div class="task-action-hint">
-              <i class="pi pi-arrow-right"></i>
-            </div>
-          }
+
+          <div class="task-actions">
+            <!-- Botón fijar -->
+            <button 
+              class="action-btn pin-btn"
+              [class.pinned]="task.isPinned"
+              (click)="onTogglePin(task, $event)"
+              [title]="task.isPinned ? 'Desfijar tarea' : 'Fijar tarea'"
+              pTooltip
+              [tooltipOptions]="{showDelay: 500}">
+              <i [class]="task.isPinned ? 'pi pi-star-fill' : 'pi pi-star'"></i>
+            </button>
+            
+            @if (task.type === TaskType.Invoice) {
+              <div class="action-hint">
+                <i class="pi pi-arrow-right"></i>
+              </div>
+            }
+          </div>
         </div>
       }
     </div>
+
+    @if (totalFilteredTasks > rowsPerPage()) {
+      <div class="tasks-paginator">
+        <p-paginator
+          [rows]="rowsPerPage()"
+          [totalRecords]="totalFilteredTasks"
+          [rowsPerPageOptions]="rowsPerPageOptions"
+          [first]="currentPage() * rowsPerPage()"
+          (onPageChange)="onPageChange($event)"
+          [showCurrentPageReport]="true"
+          currentPageReportTemplate="Mostrando {first} - {last} de {totalRecords} tareas"
+          styleClass="tasks-paginator-component">
+        </p-paginator>
+      </div>
+    }
+  }
+
+  @if (completedCount > 0 && !showCompleted) {
+    <div class="completed-summary">
+      <i class="pi pi-check"></i>
+      <span>{{ completedCount }} tarea{{ completedCount > 1 ? 's' : '' }} completada{{ completedCount > 1 ? 's' : '' }}</span>
+    </div>
   }
 </div>
-

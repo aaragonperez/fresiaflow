@@ -1,5 +1,6 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PaginatorModule } from 'primeng/paginator';
 import { Alert, AlertSeverity, AlertType } from '../../../domain/dashboard.model';
 
 /**
@@ -9,7 +10,7 @@ import { Alert, AlertSeverity, AlertType } from '../../../domain/dashboard.model
 @Component({
   selector: 'app-alerts-widget',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PaginatorModule],
   templateUrl: './alerts-widget.component.html',
   styleUrls: ['./alerts-widget.component.css']
 })
@@ -17,6 +18,11 @@ export class AlertsWidgetComponent {
   @Input() alerts: Alert[] = [];
   @Input() loading = false;
   @Input() error: string | null = null;
+
+  // Paginación
+  currentPage = signal(0);
+  rowsPerPage = signal(5);
+  rowsPerPageOptions = [5, 10, 20, 50];
 
   // Enums para usar en el template
   readonly AlertSeverity = AlertSeverity;
@@ -126,6 +132,30 @@ export class AlertsWidgetComponent {
    */
   get unresolvedAlertsCount(): number {
     return this.alerts.filter(a => !a.resolvedAt).length;
+  }
+
+  /**
+   * Obtiene las alertas paginadas.
+   */
+  get paginatedAlerts(): Alert[] {
+    const start = this.currentPage() * this.rowsPerPage();
+    const end = start + this.rowsPerPage();
+    return this.alerts.slice(start, end);
+  }
+
+  /**
+   * Total de alertas (para el paginador).
+   */
+  get totalAlerts(): number {
+    return this.alerts.length;
+  }
+
+  /**
+   * Maneja el cambio de página en el paginador.
+   */
+  onPageChange(event: any): void {
+    this.currentPage.set(event.page);
+    this.rowsPerPage.set(event.rows);
   }
 
   /**

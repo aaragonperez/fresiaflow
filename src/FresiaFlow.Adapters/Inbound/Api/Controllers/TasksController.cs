@@ -1,5 +1,6 @@
 using FresiaFlow.Application.Ports.Inbound;
 using FresiaFlow.Adapters.Inbound.Api.Dtos;
+using FresiaFlow.Domain.Tasks;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FresiaFlow.Adapters.Inbound.Api.Controllers;
@@ -12,10 +13,17 @@ namespace FresiaFlow.Adapters.Inbound.Api.Controllers;
 public class TasksController : ControllerBase
 {
     private readonly IProposeDailyPlanUseCase _proposeDailyPlanUseCase;
+    private readonly ICreateTaskUseCase _createTaskUseCase;
+    private readonly ITaskManagementUseCase _taskManagementUseCase;
 
-    public TasksController(IProposeDailyPlanUseCase proposeDailyPlanUseCase)
+    public TasksController(
+        IProposeDailyPlanUseCase proposeDailyPlanUseCase,
+        ICreateTaskUseCase createTaskUseCase,
+        ITaskManagementUseCase taskManagementUseCase)
     {
         _proposeDailyPlanUseCase = proposeDailyPlanUseCase;
+        _createTaskUseCase = createTaskUseCase;
+        _taskManagementUseCase = taskManagementUseCase;
     }
 
     /// <summary>
@@ -24,9 +32,8 @@ public class TasksController : ControllerBase
     [HttpGet("pending")]
     public async Task<IActionResult> GetPendingTasks([FromQuery] DateTime? date, CancellationToken cancellationToken)
     {
-        // TODO: Implementar caso de uso para obtener tareas pendientes
-        // Por ahora retorna lista vacía
-        return Ok(new List<object>());
+        var tasks = await _taskManagementUseCase.GetPendingTasksAsync(date, cancellationToken);
+        return Ok(tasks);
     }
 
     /// <summary>
@@ -35,18 +42,34 @@ public class TasksController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetTaskById(Guid id, CancellationToken cancellationToken)
     {
-        // TODO: Implementar
-        return NotFound();
+        var task = await _taskManagementUseCase.GetByIdAsync(id, cancellationToken);
+        if (task == null)
+        {
+            return NotFound();
+        }
+        return Ok(task);
     }
 
     /// <summary>
-    /// Crea una nueva tarea.
+    /// Crea una nueva tarea. Envía notificación por WhatsApp si está habilitado.
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> CreateTask([FromBody] CreateTaskDto dto, CancellationToken cancellationToken)
     {
-        // TODO: Implementar caso de uso
-        return Ok(new { id = Guid.NewGuid(), title = dto.Title });
+        var command = new CreateTaskCommand(
+            dto.Title,
+            dto.Description,
+            dto.Priority,
+            dto.DueDate,
+            dto.RelatedInvoiceId,
+            dto.RelatedTransactionId);
+
+        var result = await _createTaskUseCase.ExecuteAsync(command, cancellationToken);
+
+        return CreatedAtAction(
+            nameof(GetTaskById),
+            new { id = result.Task.Id },
+            result.Task);
     }
 
     /// <summary>
@@ -55,7 +78,14 @@ public class TasksController : ControllerBase
     [HttpPost("{id}/complete")]
     public async Task<IActionResult> CompleteTask(Guid id, CancellationToken cancellationToken)
     {
-        // TODO: Implementar
+        try
+        {
+            await _taskManagementUseCase.CompleteAsync(id, cancellationToken);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
         return NoContent();
     }
 
@@ -65,7 +95,51 @@ public class TasksController : ControllerBase
     [HttpPatch("{id}/priority")]
     public async Task<IActionResult> UpdateTaskPriority(Guid id, [FromBody] UpdatePriorityDto dto, CancellationToken cancellationToken)
     {
-        // TODO: Implementar
+        try
+        {
+            await _taskManagementUseCase.UpdatePriorityAsync(id, (TaskPriority)dto.Priority, cancellationToken);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Fija o desfija una tarea (toggle).
+    /// </summary>
+    [HttpPost("{id}/toggle-pin")]
+    public async Task<IActionResult> ToggleTaskPin(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _taskManagementUseCase.TogglePinAsync(id, cancellationToken);
+            var task = await _taskManagementUseCase.GetByIdAsync(id, cancellationToken);
+            return Ok(new { isPinned = task?.IsPinned });
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+    }
+
+    /// <summary>
+    /// Desmarca una tarea como completada.
+    /// </summary>
+    [HttpPost("{id}/uncomplete")]
+    public async Task<IActionResult> UncompleteTask(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _taskManagementUseCase.UncompleteAsync(id, cancellationToken);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+
         return NoContent();
     }
 
@@ -75,7 +149,7 @@ public class TasksController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTask(Guid id, CancellationToken cancellationToken)
     {
-        // TODO: Implementar
+        await _taskManagementUseCase.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
 

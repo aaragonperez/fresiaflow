@@ -275,3 +275,123 @@
   color: #2563eb;
 }
 
+/* Paginador */
+.alerts-paginator {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+:host ::ng-deep .alerts-paginator-component {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 0.75rem;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-paginator {
+  padding: 0;
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Primera línea: Texto de información */
+:host ::ng-deep .alerts-paginator-component .p-paginator-current {
+  font-size: 0.7rem;
+  color: #6b7280;
+  padding: 0.25rem 0;
+  order: 1;
+  width: 100%;
+  text-align: center;
+}
+
+/* Segunda línea: Controles de navegación */
+:host ::ng-deep .alerts-paginator-component .p-paginator-pages,
+:host ::ng-deep .alerts-paginator-component .p-paginator-prev,
+:host ::ng-deep .alerts-paginator-component .p-paginator-next,
+:host ::ng-deep .alerts-paginator-component .p-paginator-first,
+:host ::ng-deep .alerts-paginator-component .p-paginator-last,
+:host ::ng-deep .alerts-paginator-component .p-paginator-rpp-options {
+  order: 2;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-paginator-left-content {
+  display: none;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-paginator-right-content {
+  display: none;
+}
+
+/* Contenedor de controles centrado */
+:host ::ng-deep .alerts-paginator-component .p-paginator {
+  align-items: center;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-paginator-pages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-paginator-pages .p-paginator-page {
+  min-width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.7rem;
+  padding: 0;
+  margin: 0;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-paginator-pages .p-paginator-page.p-highlight {
+  min-width: 1.75rem;
+  height: 1.75rem;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-paginator-prev,
+:host ::ng-deep .alerts-paginator-component .p-paginator-next,
+:host ::ng-deep .alerts-paginator-component .p-paginator-first,
+:host ::ng-deep .alerts-paginator-component .p-paginator-last {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.7rem;
+  padding: 0;
+  margin: 0 0.15rem;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-paginator-prev .pi,
+:host ::ng-deep .alerts-paginator-component .p-paginator-next .pi,
+:host ::ng-deep .alerts-paginator-component .p-paginator-first .pi,
+:host ::ng-deep .alerts-paginator-component .p-paginator-last .pi {
+  font-size: 0.7rem;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-dropdown {
+  font-size: 0.7rem;
+  height: 1.75rem;
+  min-width: 3.5rem;
+  margin-left: 0.5rem;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-dropdown .p-dropdown-label {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-dropdown .p-dropdown-trigger {
+  width: 1.5rem;
+  padding: 0;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-dropdown .p-dropdown-trigger .pi {
+  font-size: 0.6rem;
+}
+
+:host ::ng-deep .alerts-paginator-component .p-paginator-rpp-options {
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+

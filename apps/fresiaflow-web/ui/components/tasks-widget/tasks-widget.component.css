@@ -17,11 +17,24 @@
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 2px solid #f3f4f6;
+  gap: 1rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .widget-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #1f2937;
   display: flex;
@@ -34,12 +47,39 @@
 }
 
 .task-count {
+  background: #e5e7eb;
+  color: #6b7280;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.task-count.has-pending {
   background: #fee2e2;
   color: #dc2626;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.875rem;
-  font-weight: 600;
+}
+
+/* Filtro de prioridad */
+.priority-filter {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.priority-filter:hover {
+  border-color: #dc2626;
+}
+
+.priority-filter:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
 }
 
 .loading-state,
@@ -76,7 +116,7 @@
 .tasks-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
@@ -84,19 +124,19 @@
 
 .task-item {
   display: flex;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0.75rem;
+  padding: 0.75rem;
   background: #f9fafb;
   border-radius: 8px;
   border-left: 4px solid #e5e7eb;
   transition: all 0.2s;
   min-width: 0;
   overflow: hidden;
+  align-items: flex-start;
 }
 
 .task-item:hover {
   background: #f3f4f6;
-  transform: translateX(4px);
 }
 
 .task-item.clickable {
@@ -109,8 +149,14 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.task-item.clickable:active {
-  transform: translateX(2px) scale(0.99);
+.task-item.completed {
+  opacity: 0.6;
+  border-left-color: #10b981;
+}
+
+.task-item.pinned {
+  border-left-color: #f59e0b;
+  background: linear-gradient(135deg, #fffbeb, #f9fafb);
 }
 
 .task-item.overdue {
@@ -118,34 +164,59 @@
   background: #fef2f2;
 }
 
-.task-action-hint {
+/* Checkbox de completado */
+.task-checkbox {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary-color, #dc2626);
-  opacity: 0;
-  transition: opacity 0.2s, transform 0.2s;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.2s;
 }
 
-.task-item.clickable:hover .task-action-hint {
-  opacity: 1;
-  transform: translateX(4px);
+.task-checkbox:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.task-checkbox .pi {
+  font-size: 1.1rem;
+  color: #9ca3af;
+  transition: all 0.2s;
+}
+
+.task-checkbox .pi.completed {
+  color: #10b981;
+}
+
+.task-checkbox:hover .pi {
+  color: #10b981;
 }
 
 .task-icon {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: white;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #dc2626;
 }
 
+.task-icon.pinned {
+  background: #fef3c7;
+}
+
 .task-icon .pi {
-  font-size: 1.25rem;
+  font-size: 1rem;
+}
+
+.task-icon .pinned-icon {
+  color: #f59e0b;
 }
 
 .task-content {
@@ -158,12 +229,12 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .task-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: #1f2937;
   flex: 1;
@@ -172,21 +243,26 @@
   white-space: nowrap;
 }
 
+.task-title.completed {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
 .task-type-badge {
   background: #e5e7eb;
   color: #6b7280;
-  padding: 0.25rem 0.5rem;
+  padding: 0.15rem 0.4rem;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
   white-space: nowrap;
 }
 
 .task-description {
-  margin: 0.5rem 0;
-  font-size: 0.875rem;
+  margin: 0.25rem 0;
+  font-size: 0.8rem;
   color: #6b7280;
-  line-height: 1.5;
+  line-height: 1.4;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -196,42 +272,56 @@
 
 .task-footer {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
   margin-top: 0.5rem;
   flex-wrap: wrap;
 }
 
-.task-priority {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+/* Selector de prioridad inline */
+.priority-selector {
+  display: flex;
 }
 
-.task-priority.priority-high {
+.priority-select {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.priority-select.priority-high {
   background: #fee2e2;
   color: #dc2626;
 }
 
-.task-priority.priority-medium {
+.priority-select.priority-medium {
   background: #fef3c7;
   color: #d97706;
 }
 
-.task-priority.priority-low {
+.priority-select.priority-low {
   background: #dbeafe;
   color: #2563eb;
+}
+
+.priority-select:hover {
+  opacity: 0.8;
+}
+
+.priority-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
 .task-due-date {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: #6b7280;
 }
 
@@ -240,3 +330,191 @@
   font-weight: 600;
 }
 
+/* Acciones de la tarea */
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #9ca3af;
+}
+
+.action-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #374151;
+}
+
+.action-btn.pin-btn.pinned {
+  color: #f59e0b;
+}
+
+.action-btn.pin-btn:hover {
+  color: #f59e0b;
+  background: #fef3c7;
+}
+
+.action-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color, #dc2626);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.task-item.clickable:hover .action-hint {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* Paginador */
+.tasks-paginator {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+:host ::ng-deep .tasks-paginator-component {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 0.75rem;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-paginator {
+  padding: 0;
+  min-height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Primera línea: Texto de información */
+:host ::ng-deep .tasks-paginator-component .p-paginator-current {
+  font-size: 0.7rem;
+  color: #6b7280;
+  padding: 0.25rem 0;
+  order: 1;
+  width: 100%;
+  text-align: center;
+}
+
+/* Segunda línea: Controles de navegación */
+:host ::ng-deep .tasks-paginator-component .p-paginator-pages,
+:host ::ng-deep .tasks-paginator-component .p-paginator-prev,
+:host ::ng-deep .tasks-paginator-component .p-paginator-next,
+:host ::ng-deep .tasks-paginator-component .p-paginator-first,
+:host ::ng-deep .tasks-paginator-component .p-paginator-last,
+:host ::ng-deep .tasks-paginator-component .p-paginator-rpp-options {
+  order: 2;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-paginator-left-content {
+  display: none;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-paginator-right-content {
+  display: none;
+}
+
+/* Contenedor de controles centrado */
+:host ::ng-deep .tasks-paginator-component .p-paginator {
+  align-items: center;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-paginator-pages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-paginator-pages .p-paginator-page {
+  min-width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.7rem;
+  padding: 0;
+  margin: 0;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-paginator-pages .p-paginator-page.p-highlight {
+  min-width: 1.75rem;
+  height: 1.75rem;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-paginator-prev,
+:host ::ng-deep .tasks-paginator-component .p-paginator-next,
+:host ::ng-deep .tasks-paginator-component .p-paginator-first,
+:host ::ng-deep .tasks-paginator-component .p-paginator-last {
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.7rem;
+  padding: 0;
+  margin: 0 0.15rem;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-paginator-prev .pi,
+:host ::ng-deep .tasks-paginator-component .p-paginator-next .pi,
+:host ::ng-deep .tasks-paginator-component .p-paginator-first .pi,
+:host ::ng-deep .tasks-paginator-component .p-paginator-last .pi {
+  font-size: 0.7rem;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-dropdown {
+  font-size: 0.7rem;
+  height: 1.75rem;
+  min-width: 3.5rem;
+  margin-left: 0.5rem;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-dropdown .p-dropdown-label {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-dropdown .p-dropdown-trigger {
+  width: 1.5rem;
+  padding: 0;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-dropdown .p-dropdown-trigger .pi {
+  font-size: 0.6rem;
+}
+
+:host ::ng-deep .tasks-paginator-component .p-paginator-rpp-options {
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Resumen de completadas */
+.completed-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  background: #f0fdf4;
+  border-radius: 6px;
+  color: #10b981;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.completed-summary .pi {
+  font-size: 0.9rem;
+}

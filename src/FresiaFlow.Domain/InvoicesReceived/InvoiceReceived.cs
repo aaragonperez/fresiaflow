@@ -1,3 +1,4 @@
+using System.Linq;
 using FresiaFlow.Domain.Shared;
 
 namespace FresiaFlow.Domain.InvoicesReceived;
@@ -24,7 +25,9 @@ public class InvoiceReceived
     public Money SubtotalAmount { get; private set; } // Base imponible
     public Money? TaxAmount { get; private set; } // IVA
     public decimal? TaxRate { get; private set; } // Tipo de IVA (21%, 10%, etc.)
-    public Money TotalAmount { get; private set; } // Total factura
+    public Money? IrpfAmount { get; private set; } // Retención IRPF (se resta del total)
+    public decimal? IrpfRate { get; private set; } // Tipo de retención IRPF (15%, 7%, etc.)
+    public Money TotalAmount { get; private set; } // Total factura (Base + IVA - IRPF)
     public string Currency { get; private set; }
 
     // Pago
@@ -79,14 +82,10 @@ public class InvoiceReceived
         if (string.IsNullOrWhiteSpace(supplierName))
             throw new ArgumentException("El nombre del proveedor no puede estar vacío.", nameof(supplierName));
         
-        if (subtotalAmount.Value < 0)
-            throw new ArgumentException("La base imponible no puede ser negativa.", nameof(subtotalAmount));
+        // Permitir importes negativos para notas de crédito, rectificaciones, etc.
         
-        if (totalAmount.Value < 0)
-            throw new ArgumentException("El total de la factura no puede ser negativo.", nameof(totalAmount));
-        
-        if (totalAmount.Value < subtotalAmount.Value)
-            throw new ArgumentException("El total no puede ser menor que la base imponible.", nameof(totalAmount));
+        // Nota: con IRPF (retención) el total puede ser menor que la base:
+        // Total = Base + IVA - IRPF
         
         if (string.IsNullOrWhiteSpace(currency))
             throw new ArgumentException("La moneda no puede estar vacía.", nameof(currency));
@@ -104,7 +103,7 @@ public class InvoiceReceived
         Currency = currency;
         Origin = origin;
         OriginalFilePath = originalFilePath;
-        PaymentType = PaymentType.Cash; // Por defecto efectivo hasta que se asocie banco
+        PaymentType = PaymentType.Bank; // Por defecto banco (la mayoría son bancarias)
         CreatedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
@@ -212,6 +211,24 @@ public class InvoiceReceived
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void SetIrpfAmount(Money? irpfAmount)
+    {
+        if (irpfAmount != null && irpfAmount.Value < 0)
+            throw new ArgumentException("El importe de IRPF no puede ser negativo.", nameof(irpfAmount));
+        
+        IrpfAmount = irpfAmount;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void SetIrpfRate(decimal? irpfRate)
+    {
+        if (irpfRate.HasValue && (irpfRate.Value < 0 || irpfRate.Value > 100))
+            throw new ArgumentException("La tasa de IRPF debe estar entre 0 y 100.", nameof(irpfRate));
+        
+        IrpfRate = irpfRate;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void SetProcessedFilePath(string? processedFilePath)
     {
         ProcessedFilePath = processedFilePath;
@@ -235,18 +252,25 @@ public class InvoiceReceived
 
     public void AddLine(InvoiceReceivedLine line)
     {
-        if (line == null)
-            throw new ArgumentNullException(nameof(line));
-        
-        // Establecer la relación usando reflexión (InvoiceReceivedId es privado)
-        var invoiceIdProperty = typeof(InvoiceReceivedLine).GetProperty("InvoiceReceivedId", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (invoiceIdProperty != null && invoiceIdProperty.CanWrite)
+        AttachLine(line);
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Reemplaza todas las líneas de detalle por el conjunto indicado.
+    /// </summary>
+    public void ReplaceLines(IEnumerable<InvoiceReceivedLine> lines)
+    {
+        if (lines == null)
+            throw new ArgumentNullException(nameof(lines));
+
+        _lines.Clear();
+
+        foreach (var line in lines.OrderBy(l => l.LineNumber))
         {
-            invoiceIdProperty.SetValue(line, Id);
+            AttachLine(line);
         }
-        
-        _lines.Add(line);
+
         UpdatedAt = DateTime.UtcNow;
     }
 
@@ -282,11 +306,8 @@ public class InvoiceReceived
 
     public void SetSubtotalAmount(Money subtotalAmount)
     {
-        if (subtotalAmount.Value < 0)
-            throw new ArgumentException("La base imponible no puede ser negativa.", nameof(subtotalAmount));
-        
-        if (TotalAmount.Value < subtotalAmount.Value)
-            throw new ArgumentException("La base imponible no puede ser mayor que el total.", nameof(subtotalAmount));
+        // Permitir importes negativos para notas de crédito, rectificaciones, etc.
+        // Nota: con IRPF (retención) el total puede ser menor que la base
         
         SubtotalAmount = subtotalAmount;
         UpdatedAt = DateTime.UtcNow;
@@ -294,11 +315,8 @@ public class InvoiceReceived
 
     public void SetTotalAmount(Money totalAmount)
     {
-        if (totalAmount.Value < 0)
-            throw new ArgumentException("El total de la factura no puede ser negativo.", nameof(totalAmount));
-        
-        if (totalAmount.Value < SubtotalAmount.Value)
-            throw new ArgumentException("El total no puede ser menor que la base imponible.", nameof(totalAmount));
+        // Permitir importes negativos para notas de crédito, rectificaciones, etc.
+        // Nota: con IRPF (retención) el total puede ser menor que la base
         
         TotalAmount = totalAmount;
         UpdatedAt = DateTime.UtcNow;
@@ -311,5 +329,20 @@ public class InvoiceReceived
         
         Currency = currency;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    private void AttachLine(InvoiceReceivedLine line)
+    {
+        if (line == null)
+            throw new ArgumentNullException(nameof(line));
+
+        var invoiceIdProperty = typeof(InvoiceReceivedLine).GetProperty("InvoiceReceivedId",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        if (invoiceIdProperty != null && invoiceIdProperty.CanWrite)
+        {
+            invoiceIdProperty.SetValue(line, Id);
+        }
+
+        _lines.Add(line);
     }
 }

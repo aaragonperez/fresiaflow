@@ -18,7 +18,9 @@ export interface Invoice {
   subtotalAmount: number; // Base imponible
   taxAmount?: number; // IVA
   taxRate?: number; // Tipo de IVA (21%, 10%, etc.)
-  totalAmount: number; // Total factura
+  irpfAmount?: number; // Retención IRPF (se resta del total)
+  irpfRate?: number; // Tipo de IRPF (15%, 7%, etc.)
+  totalAmount: number; // Total factura (Base + IVA - IRPF)
   currency: string;
   
   // Pago
@@ -38,6 +40,9 @@ export interface Invoice {
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
+  
+  // Contabilidad
+  hasAccountingEntry?: boolean; // Indica si la factura tiene un asiento contable asociado
 }
 
 /**

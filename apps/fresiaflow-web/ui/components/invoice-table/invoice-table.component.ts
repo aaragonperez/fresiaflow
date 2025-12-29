@@ -1,7 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
+import { TableModule, Table } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TooltipModule } from 'primeng/tooltip';
 import { InputTextModule } from 'primeng/inputtext';
@@ -34,9 +34,12 @@ import { Invoice } from '../../../domain/invoice.model';
   styleUrls: ['./invoice-table.component.css']
 })
 export class InvoiceTableComponent {
+  @ViewChild('dt') table!: Table;
+  
   @Input() invoices: Invoice[] = [];
   @Output() deleteInvoice = new EventEmitter<string>();
   @Output() editInvoice = new EventEmitter<Invoice>();
+  @Output() viewInvoice = new EventEmitter<Invoice>();
 
   readonly rows = 10;
   readonly rowsPerPageOptions = [10, 25, 50];
@@ -51,6 +54,10 @@ export class InvoiceTableComponent {
     if (!invoiceId) return;
     const { [invoiceId]: _, ...rest } = this.expandedRowKeys;
     this.expandedRowKeys = rest;
+  }
+
+  onView(invoice: Invoice): void {
+    this.viewInvoice.emit(invoice);
   }
 
   onEdit(invoice: Invoice): void {

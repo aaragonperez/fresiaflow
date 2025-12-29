@@ -10,6 +10,7 @@ public class TaskItem
     public string? Description { get; private set; }
     public TaskPriority Priority { get; private set; }
     public bool IsCompleted { get; private set; }
+    public bool IsPinned { get; private set; }
     public DateTime? DueDate { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime? CompletedAt { get; private set; }
@@ -51,6 +52,21 @@ public class TaskItem
     public void UpdatePriority(TaskPriority priority)
     {
         Priority = priority;
+    }
+
+    public void Pin()
+    {
+        IsPinned = true;
+    }
+
+    public void Unpin()
+    {
+        IsPinned = false;
+    }
+
+    public void TogglePin()
+    {
+        IsPinned = !IsPinned;
     }
 
     public void LinkToInvoice(Guid invoiceId)

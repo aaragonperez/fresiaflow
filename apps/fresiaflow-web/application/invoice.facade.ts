@@ -113,11 +113,29 @@ export class InvoiceFacade {
       if (data.supplierName) updateRequest.supplierName = data.supplierName;
       if (data.supplierTaxId !== undefined) updateRequest.supplierTaxId = data.supplierTaxId;
       if (data.issueDate) updateRequest.issueDate = data.issueDate.toISOString();
+      if (data.receivedDate) updateRequest.receivedDate = data.receivedDate.toISOString();
+      if (data.supplierAddress !== undefined) updateRequest.supplierAddress = data.supplierAddress;
       if (data.totalAmount !== undefined) updateRequest.totalAmount = data.totalAmount;
       if (data.taxAmount !== undefined) updateRequest.taxAmount = data.taxAmount;
+      if (data.taxRate !== undefined) updateRequest.taxRate = data.taxRate;
+      if (data.irpfAmount !== undefined) updateRequest.irpfAmount = data.irpfAmount;
+      if (data.irpfRate !== undefined) updateRequest.irpfRate = data.irpfRate;
       if (data.subtotalAmount !== undefined) updateRequest.subtotalAmount = data.subtotalAmount;
       if (data.currency) updateRequest.currency = data.currency;
       if (data.notes !== undefined) updateRequest.notes = data.notes;
+      if (data.lines) {
+        updateRequest.lines = data.lines.map(line => ({
+          id: line.id,
+          lineNumber: line.lineNumber,
+          description: line.description,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          unitPriceCurrency: line.unitPriceCurrency || data.currency,
+          taxRate: line.taxRate,
+          lineTotal: line.lineTotal,
+          lineTotalCurrency: line.lineTotalCurrency || data.currency
+        }));
+      }
 
       const updated = await this.invoiceApi.updateInvoice(id, updateRequest);
       
@@ -155,6 +173,18 @@ export class InvoiceFacade {
       throw error;
     } finally {
       this._loading.set(false);
+    }
+  }
+
+  /**
+   * Descarga el archivo original de una factura para visualización.
+   */
+  async downloadInvoice(id: string): Promise<Blob> {
+    try {
+      return await this.invoiceApi.downloadInvoice(id);
+    } catch (error: unknown) {
+      this._error.set(error instanceof Error ? error.message : 'Error al descargar factura');
+      throw error;
     }
   }
 

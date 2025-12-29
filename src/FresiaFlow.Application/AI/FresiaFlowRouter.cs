@@ -28,6 +28,16 @@ public class RouterResponse
 {
     public string Content { get; set; } = string.Empty;
     public string SelectedAgent { get; set; } = string.Empty;
+    public List<ChatAction> Actions { get; set; } = new();
+}
+
+/// <summary>
+/// Acción a ejecutar en el frontend.
+/// </summary>
+public class ChatAction
+{
+    public string Type { get; set; } = string.Empty;
+    public Dictionary<string, object> Params { get; set; } = new();
 }
 
 /// <summary>
@@ -44,7 +54,8 @@ public class ChatMessageHistory
 /// </summary>
 public class FresiaFlowRouter : IFresiaFlowRouter
 {
-    private readonly IOpenAIClient _openAIClient;
+    private readonly IChatAIClient _openAIClient;
+    private readonly ToolRegistry _toolRegistry;
     private readonly ILogger<FresiaFlowRouter> _logger;
 
     // Agentes disponibles según .cursor/rules.md y .cursor/prompts.md
@@ -73,10 +84,12 @@ public class FresiaFlowRouter : IFresiaFlowRouter
     };
 
     public FresiaFlowRouter(
-        IOpenAIClient openAIClient,
+        IChatAIClient openAIClient,
+        ToolRegistry toolRegistry,
         ILogger<FresiaFlowRouter> logger)
     {
         _openAIClient = openAIClient;
+        _toolRegistry = toolRegistry;
         _logger = logger;
     }
 
@@ -94,16 +107,50 @@ public class FresiaFlowRouter : IFresiaFlowRouter
         // 3. Construir mensajes con histórico
         var messages = BuildMessagesWithHistory(systemPrompt, userMessage, history);
 
-        // 4. Llamar a OpenAI con el histórico
-        var response = await CallOpenAIWithHistoryAsync(messages, cancellationToken);
+        // 4. Obtener herramientas disponibles
+        var tools = _toolRegistry.GetAvailableTools();
 
-        // 5. Extraer agente de la respuesta si está en formato [AGENTE]: ...
-        var (content, agent) = ParseResponse(response, selectedAgent);
+        // 5. Llamar a OpenAI con tool calling
+        var toolCallResult = await CallOpenAIWithToolsAsync(systemPrompt, userMessage, history, tools, cancellationToken);
+
+        // 6. Ejecutar herramientas si OpenAI las invocó
+        var actions = new List<ChatAction>();
+        string finalResponse = toolCallResult.Message ?? "";
+
+        if (toolCallResult.ToolCalls.Count > 0)
+        {
+            _logger.LogInformation("Ejecutando {Count} herramienta(s) invocada(s) por OpenAI", toolCallResult.ToolCalls.Count);
+
+            var toolResults = new List<string>();
+            foreach (var toolCall in toolCallResult.ToolCalls)
+            {
+                var toolResult = await _toolRegistry.ExecuteToolAsync(toolCall.ToolName, toolCall.ArgumentsJson, cancellationToken);
+                toolResults.Add(toolResult);
+
+                // Intentar extraer acción del resultado de la herramienta
+                var extractedAction = ExtractActionFromToolResult(toolResult);
+                if (extractedAction != null)
+                {
+                    actions.Add(extractedAction);
+                }
+            }
+
+            // 7. Llamar a OpenAI nuevamente con los resultados de las herramientas
+            var toolResultsText = string.Join("\n", toolResults);
+            finalResponse = await _openAIClient.GetChatCompletionAsync(
+                systemPrompt,
+                $"Consulta del usuario: {userMessage}\n\nResultados de las herramientas ejecutadas:\n{toolResultsText}\n\nResponde al usuario de forma natural explicando lo que se hizo.",
+                cancellationToken);
+        }
+
+        // 8. Extraer agente de la respuesta si está en formato [AGENTE]: ...
+        var (content, agent) = ParseResponse(finalResponse, selectedAgent);
 
         return new RouterResponse
         {
             Content = content,
-            SelectedAgent = agent
+            SelectedAgent = agent,
+            Actions = actions
         };
     }
 
@@ -263,58 +310,76 @@ Reglas estrictas:
         return messages;
     }
 
-    private async Task<string> CallOpenAIWithHistoryAsync(List<object> messages, CancellationToken cancellationToken)
+    private async Task<ToolCallResult> CallOpenAIWithToolsAsync(
+        string systemPrompt,
+        string userMessage,
+        List<ChatMessageHistory> history,
+        List<ToolDefinition> tools,
+        CancellationToken cancellationToken)
     {
-        // Usar el método GetChatCompletionAsync pero necesitamos uno que soporte histórico
-        // Por ahora, extraer system prompt y último mensaje para compatibilidad
-        var systemPrompt = "";
-        var userMessage = "";
-        var historyMessages = new List<object>();
-
-        foreach (var msg in messages)
-        {
-            var msgDict = JsonSerializer.Deserialize<Dictionary<string, object>>(
-                JsonSerializer.Serialize(msg));
-            
-            if (msgDict != null && msgDict.ContainsKey("role"))
-            {
-                var role = msgDict["role"].ToString();
-                var content = msgDict.ContainsKey("content") ? msgDict["content"].ToString() : "";
-
-                if (role == "system")
-                {
-                    systemPrompt = content ?? "";
-                }
-                else if (role == "user")
-                {
-                    if (string.IsNullOrEmpty(userMessage))
-                    {
-                        userMessage = content ?? "";
-                    }
-                    else
-                    {
-                        historyMessages.Add(msg);
-                    }
-                }
-                else if (role == "assistant")
-                {
-                    historyMessages.Add(msg);
-                }
-            }
-        }
-
         // Construir contexto del histórico
         var historyContext = "";
-        if (historyMessages.Count > 0)
+        if (history.Count > 0)
         {
-            var historyText = string.Join("\n", historyMessages.Select(m => 
-                JsonSerializer.Serialize(m)));
+            var historyText = string.Join("\n", history.Select(h => 
+                $"{h.Role}: {h.Content}"));
             historyContext = $"\n\nHistórico de la conversación:\n{historyText}\n\n";
         }
 
-        // Llamar a OpenAI
+        // Llamar a OpenAI con tool calling
         var fullUserMessage = historyContext + userMessage;
-        return await _openAIClient.GetChatCompletionAsync(systemPrompt, fullUserMessage, cancellationToken);
+        return await _openAIClient.GetChatCompletionWithToolsAsync(
+            systemPrompt,
+            fullUserMessage,
+            tools,
+            cancellationToken);
+    }
+
+    private ChatAction? ExtractActionFromToolResult(string toolResult)
+    {
+        try
+        {
+            var resultDict = JsonSerializer.Deserialize<Dictionary<string, object>>(toolResult);
+            if (resultDict == null || !resultDict.ContainsKey("action"))
+                return null;
+
+            var actionObj = resultDict["action"];
+            if (actionObj == null)
+                return null;
+
+            var actionJson = actionObj.ToString();
+            if (string.IsNullOrWhiteSpace(actionJson))
+                return null;
+
+            var actionDict = JsonSerializer.Deserialize<Dictionary<string, object>>(actionJson);
+            if (actionDict == null || !actionDict.ContainsKey("type"))
+                return null;
+
+            var action = new ChatAction
+            {
+                Type = actionDict["type"].ToString() ?? ""
+            };
+
+            if (actionDict.ContainsKey("params") && actionDict["params"] != null)
+            {
+                var paramsJson = actionDict["params"].ToString();
+                if (!string.IsNullOrWhiteSpace(paramsJson))
+                {
+                    var paramsDict = JsonSerializer.Deserialize<Dictionary<string, object>>(paramsJson);
+                    if (paramsDict != null)
+                    {
+                        action.Params = paramsDict;
+                    }
+                }
+            }
+
+            return action.Type != string.Empty ? action : null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error extrayendo acción del resultado de herramienta");
+            return null;
+        }
     }
 
     private (string content, string agent) ParseResponse(string response, string defaultAgent)

@@ -1,0 +1,242 @@
+<div class="invoice-sources-config">
+  <div class="config-header">
+    <div class="header-title">
+      <i class="pi pi-cloud-download"></i>
+      <h2>Fuentes de Descarga Automática de Facturas</h2>
+    </div>
+    <p class="header-description">
+      Configura fuentes automáticas para descargar facturas desde email, portales web, OneDrive/SharePoint o mediante web scraping.
+    </p>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <p-progressSpinner strokeWidth="4" />
+      <p>Cargando fuentes...</p>
+    </div>
+  } @else {
+    <!-- Lista de fuentes -->
+    <div class="section-header" (click)="toggleSourcesList()">
+      <div class="section-title">
+        <i class="pi pi-list"></i>
+        <h3>Fuentes Configuradas ({{ sources().length }})</h3>
+      </div>
+      <i class="pi pi-angle-down collapse-icon" [class.rotated]="sourcesListExpanded()"></i>
+    </div>
+
+    @if (sourcesListExpanded()) {
+      <div class="section-content">
+        @if (sources().length === 0) {
+          <p class="empty-message">No hay fuentes configuradas. Crea una nueva fuente para comenzar.</p>
+        } @else {
+          <p-table [value]="sources()" styleClass="invoice-p-table paginator-compact" [rowHover]="true" [autoLayout]="true">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Última Sincronización</th>
+                <th>Archivos Procesados</th>
+                <th class="actions-col">Acciones</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-source>
+              <tr>
+                <td>{{ source.name }}</td>
+                <td>
+                  <i [class]="'pi ' + getSourceTypeIcon(source.sourceType)"></i>
+                  {{ getSourceTypeLabel(source.sourceType) }}
+                </td>
+                <td>
+                  <p-tag [value]="source.enabled ? 'Habilitada' : 'Deshabilitada'" 
+                         [severity]="source.enabled ? 'success' : 'warning'" />
+                </td>
+                <td>{{ formatDate(source.lastSyncAt) }}</td>
+                <td>{{ source.totalFilesSynced }}</td>
+                <td class="actions-col">
+                  <div class="action-buttons">
+                    <button pButton type="button" 
+                            class="p-button-rounded p-button-text p-button-sm"
+                            icon="pi pi-eye"
+                            (click)="getPreview(source.id)"
+                            title="Vista previa"></button>
+                    <button pButton type="button" 
+                            class="p-button-rounded p-button-text p-button-sm"
+                            icon="pi pi-pencil"
+                            (click)="openEditDialog(source)"
+                            title="Editar"></button>
+                    <button pButton type="button" 
+                            class="p-button-rounded p-button-text p-button-sm"
+                            icon="pi pi-sync"
+                            (click)="syncSource(source)"
+                            [disabled]="syncing() === source.id"
+                            title="Sincronizar"></button>
+                    <button pButton type="button" 
+                            class="p-button-rounded p-button-text p-button-sm"
+                            icon="pi pi-trash"
+                            (click)="deleteSource(source)"
+                            title="Eliminar"></button>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+
+          @if (preview()) {
+            <div class="preview-card">
+              <h4>Vista Previa</h4>
+              <p>Total: {{ preview()!.totalFiles }}, Pendientes: {{ preview()!.pendingToProcess }}</p>
+            </div>
+          }
+        }
+      </div>
+    }
+
+    <!-- Nueva fuente -->
+    <div class="section-header" (click)="toggleNewSource()">
+      <div class="section-title">
+        <i class="pi pi-plus-circle"></i>
+        <h3>Nueva Fuente</h3>
+      </div>
+      <i class="pi pi-angle-down collapse-icon" [class.rotated]="newSourceExpanded()"></i>
+    </div>
+
+    @if (newSourceExpanded()) {
+      <div class="section-content">
+        <div class="form-group">
+          <label>Tipo de Fuente</label>
+          <p-dropdown [options]="sourceTypes" [(ngModel)]="sourceType" optionLabel="label" optionValue="value" 
+                      styleClass="w-full" />
+        </div>
+
+        <div class="form-group">
+          <label>Nombre</label>
+          <input pInputText type="text" [(ngModel)]="sourceName" placeholder="Ej: Email de Proveedores" class="w-full" />
+        </div>
+
+        <div class="form-group">
+          <label>Configuración JSON</label>
+          <textarea pInputTextarea [(ngModel)]="configJson" rows="10" 
+                    [placeholder]="getConfigPlaceholder()"
+                    class="w-full"></textarea>
+          <small>Configura la fuente según su tipo. Consulta la documentación para ver los formatos JSON requeridos.</small>
+        </div>
+
+        <div class="form-group">
+          <p-inputSwitch [(ngModel)]="enabled" />
+          <label>Habilitar sincronización automática</label>
+        </div>
+
+        <div class="form-actions">
+          <button pButton type="button" label="Validar Configuración" 
+                  icon="pi pi-check" (click)="validateConfig()" [loading]="validating()"></button>
+          <button pButton type="button" label="Guardar" 
+                  icon="pi pi-save" (click)="saveSource()" severity="success"></button>
+        </div>
+
+        @if (validationResult()) {
+          <p-message [severity]="validationResult()!.isValid ? 'success' : 'error'" 
+                     [text]="validationResult()!.isValid ? 'Configuración válida' : (validationResult()!.errorMessage || 'Error de validación')" />
+        }
+      </div>
+    }
+
+    <!-- Progreso de sincronización -->
+    @if (syncStatus() === 'syncing' || syncStatus() === 'completed' || syncStatus() === 'error' || syncStatus() === 'paused') {
+      <div class="sync-progress">
+        <div class="progress-header">
+          <span class="progress-status">
+            <i [class]="syncStatus() === 'syncing' ? 'pi pi-spin pi-spinner' : 
+                        syncStatus() === 'completed' ? 'pi pi-check-circle' : 
+                        syncStatus() === 'paused' ? 'pi pi-pause-circle' :
+                        'pi pi-times-circle'"></i>
+            {{ syncStatus() === 'syncing' ? 'Sincronizando...' : 
+               syncStatus() === 'completed' ? 'Completado' : 
+               syncStatus() === 'paused' ? 'Pausado' :
+               'Error' }}
+          </span>
+          @if (syncTotalCount() > 0) {
+            <span class="progress-count">
+              {{ syncProcessedCount() }} / {{ syncTotalCount() }} archivos
+            </span>
+          }
+        </div>
+        
+        <p-progressBar 
+          [value]="syncProgress()" 
+          [showValue]="true"
+          [style]="{'height': '24px'}"
+        ></p-progressBar>
+        
+        @if (syncCurrentFile()) {
+          <div class="current-file">
+            <i class="pi pi-file"></i>
+            <span>{{ syncCurrentFile() }}</span>
+          </div>
+        }
+        
+        @if (syncMessage()) {
+          <div class="sync-message-container">
+            <small class="sync-message">{{ syncMessage() }}</small>
+            @if (syncStatus() === 'paused' && pausedSourceId()) {
+              <button pButton 
+                      type="button" 
+                      label="Reanudar Sincronización" 
+                      icon="pi pi-play"
+                      (click)="resumePausedSync(pausedSourceId()!)"
+                      severity="success"
+                      class="resume-button"></button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Acciones globales -->
+    <div class="global-actions">
+      <button pButton type="button" label="Sincronizar Todas las Fuentes" 
+              icon="pi pi-sync" (click)="syncAll()" [loading]="syncing() === 'all'" severity="info"></button>
+    </div>
+  }
+
+  <!-- Dialog de edición -->
+  <p-dialog [visible]="dialogVisible()" (visibleChange)="dialogVisible.set($event)" [header]="'Editar Fuente: ' + sourceName()" [modal]="true" [style]="{width: '600px'}">
+    <div class="dialog-content">
+      <div class="form-group">
+        <label>Tipo de Fuente</label>
+        <p-dropdown [options]="sourceTypes" [(ngModel)]="sourceType" optionLabel="label" optionValue="value" 
+                    styleClass="w-full" [disabled]="true" />
+      </div>
+
+      <div class="form-group">
+        <label>Nombre</label>
+        <input pInputText type="text" [(ngModel)]="sourceName" class="w-full" />
+      </div>
+
+      <div class="form-group">
+        <label>Configuración JSON</label>
+        <textarea pInputTextarea [(ngModel)]="configJson" rows="10" class="w-full"></textarea>
+      </div>
+
+      <div class="form-group">
+        <p-inputSwitch [(ngModel)]="enabled" />
+        <label>Habilitar sincronización automática</label>
+      </div>
+
+      <div class="form-actions">
+        <button pButton type="button" label="Validar" 
+                icon="pi pi-check" (click)="validateConfig()" [loading]="validating()"></button>
+        <button pButton type="button" label="Guardar" 
+                icon="pi pi-save" (click)="saveSource()" severity="success"></button>
+        <button pButton type="button" label="Cancelar" 
+                icon="pi pi-times" (click)="closeDialog()" severity="secondary"></button>
+      </div>
+
+      @if (validationResult()) {
+        <p-message [severity]="validationResult()!.isValid ? 'success' : 'error'" 
+                   [text]="validationResult()!.isValid ? 'Configuración válida' : (validationResult()!.errorMessage || 'Error de validación')" />
+      }
+    </div>
+  </p-dialog>
+</div>
+

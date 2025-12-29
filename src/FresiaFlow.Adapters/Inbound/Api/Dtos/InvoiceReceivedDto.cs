@@ -18,9 +18,11 @@ public class InvoiceReceivedDto
     
     // Importes
     public decimal SubtotalAmount { get; set; }
-    public decimal? TaxAmount { get; set; }
-    public decimal? TaxRate { get; set; }
-    public decimal TotalAmount { get; set; }
+    public decimal? TaxAmount { get; set; } // IVA
+    public decimal? TaxRate { get; set; } // % IVA
+    public decimal? IrpfAmount { get; set; } // Retención IRPF
+    public decimal? IrpfRate { get; set; } // % IRPF
+    public decimal TotalAmount { get; set; } // Base + IVA - IRPF
     public string Currency { get; set; } = "EUR";
     
     // Pago
@@ -40,6 +42,9 @@ public class InvoiceReceivedDto
     // Timestamps
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    
+    // Contabilidad
+    public bool HasAccountingEntry { get; set; } // Indica si la factura tiene un asiento contable asociado
 }
 
 public class InvoiceReceivedPaymentDto

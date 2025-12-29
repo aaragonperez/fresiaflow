@@ -1,14 +1,14 @@
 import { Component, OnInit, PLATFORM_ID, Inject, ViewChild } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
-import { RouterModule, RouterOutlet } from '@angular/router';
+import { RouterModule, RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { SidebarModule } from 'primeng/sidebar';
 import { ButtonModule } from 'primeng/button';
-import { MenuModule } from 'primeng/menu';
 import { BadgeModule } from 'primeng/badge';
-import { MenuItem } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { HelpDialogComponent } from '../../ui/components/help-dialog/help-dialog.component';
 import { ThemeSelectorComponent } from '../../ui/components/theme-selector/theme-selector.component';
 import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat.component';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-main-layout',
@@ -19,8 +19,8 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
     RouterOutlet,
     SidebarModule,
     ButtonModule,
-    MenuModule,
     BadgeModule,
+    ToastModule,
     HelpDialogComponent,
     ThemeSelectorComponent,
     FresiaChatComponent
@@ -52,10 +52,72 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
 
         <!-- Menu -->
         <div class="sidebar-content">
-          <p-menu 
-            [model]="sidebarVisible ? menuItems : menuItemsCollapsed" 
-            [style]="{width: '100%', border: 'none'}">
-          </p-menu>
+          <nav class="custom-menu">
+            <!-- NAVEGACIÓN -->
+            <div class="menu-section">
+              <div class="section-header" *ngIf="sidebarVisible">NAVEGACIÓN</div>
+              <a routerLink="/dashboard" routerLinkActive="active" class="menu-item">
+                <i class="pi pi-home"></i>
+                <span *ngIf="sidebarVisible">Dashboard</span>
+              </a>
+            </div>
+
+            <!-- GESTIÓN -->
+            <div class="menu-section">
+              <div class="section-header" *ngIf="sidebarVisible">GESTIÓN</div>
+              <a routerLink="/import" routerLinkActive="active" class="menu-item">
+                <i class="pi pi-download"></i>
+                <span *ngIf="sidebarVisible">Importar</span>
+              </a>
+              <a routerLink="/invoices" routerLinkActive="active" class="menu-item">
+                <i class="pi pi-file"></i>
+                <span *ngIf="sidebarVisible">Facturas</span>
+              </a>
+              <a routerLink="/banking" routerLinkActive="active" class="menu-item">
+                <i class="pi pi-wallet"></i>
+                <span *ngIf="sidebarVisible">Bancos</span>
+              </a>
+              <a routerLink="/accounting" routerLinkActive="active" class="menu-item">
+                <i class="pi pi-calculator"></i>
+                <span *ngIf="sidebarVisible">Contabilidad</span>
+              </a>
+              <a routerLink="/tasks" routerLinkActive="active" class="menu-item">
+                <i class="pi pi-check-square"></i>
+                <span *ngIf="sidebarVisible">Tareas</span>
+              </a>
+            </div>
+
+            <!-- SISTEMA -->
+            <div class="menu-section">
+              <div class="section-header" *ngIf="sidebarVisible">SISTEMA</div>
+              <div class="menu-item-wrapper">
+                <a (click)="toggleConfig()" class="menu-item clickable" [class.expanded]="configExpanded" [class.active]="isConfigRoute()">
+                  <i class="pi pi-cog"></i>
+                  <span *ngIf="sidebarVisible">Configuración</span>
+                  <i *ngIf="sidebarVisible" class="pi pi-angle-down submenu-icon" [class.rotated]="configExpanded"></i>
+                </a>
+                
+                <div class="submenu" *ngIf="configExpanded && sidebarVisible">
+                  <a routerLink="/settings/companies" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}" class="submenu-item">
+                    <i class="pi pi-building"></i>
+                    <span>Empresas Propias</span>
+                  </a>
+                  <a routerLink="/settings/onedrive" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}" class="submenu-item">
+                    <i class="pi pi-microsoft"></i>
+                    <span>Sincronización OneDrive</span>
+                  </a>
+                  <a routerLink="/settings/invoice-sources" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}" class="submenu-item">
+                    <i class="pi pi-cloud-download"></i>
+                    <span>Fuentes de Facturas</span>
+                  </a>
+                  <a routerLink="/settings/accounting" routerLinkActive="active" [routerLinkActiveOptions]="{exact: false}" class="submenu-item">
+                    <i class="pi pi-calculator"></i>
+                    <span>Contabilidad</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </nav>
         </div>
 
         <!-- Footer -->
@@ -77,6 +139,9 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
 
       <!-- Chat FresiaFlow Global -->
       <app-fresia-chat></app-fresia-chat>
+
+      <!-- Toast para mensajes globales (errores HTTP, etc.) -->
+      <p-toast position="top-right" [life]="5000"></p-toast>
     </div>
   `,
   styles: [`
@@ -84,7 +149,7 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
       display: flex;
       height: 100vh;
       overflow: hidden;
-      background: linear-gradient(135deg, var(--background-color, #fafafa) 0%, var(--secondary-color, #f5f5f5) 100%);
+      background: linear-gradient(135deg, var(--background-color) 0%, var(--secondary-color) 100%);
     }
 
     .sidebar-container {
@@ -93,8 +158,8 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
       top: 0;
       bottom: 0;
       width: 280px;
-      background: linear-gradient(180deg, var(--card-bg, #ffffff) 0%, var(--background-color, #fafafa) 100%);
-      border-right: 1px solid var(--secondary-color, #e5e7eb);
+      background: linear-gradient(180deg, var(--card-bg) 0%, var(--background-color) 100%);
+      border-right: 1px solid var(--secondary-color);
       display: flex;
       flex-direction: column;
       transition: all 0.3s ease;
@@ -112,8 +177,8 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
       right: -15px;
       top: 50px;
       z-index: 1001;
-      background: var(--card-bg, white) !important;
-      border: 2px solid var(--primary-color, #dc2626) !important;
+      background: var(--card-bg) !important;
+      border: 2px solid var(--primary-color) !important;
       border-radius: 50% !important;
       width: 30px !important;
       height: 30px !important;
@@ -121,13 +186,13 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      color: var(--primary-color, #dc2626) !important;
-      box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color, #dc2626) 20%, transparent) !important;
+      color: var(--primary-color) !important;
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--primary-color) 20%, transparent) !important;
       transition: all 0.3s ease;
     }
 
     .toggle-btn:hover {
-      background: var(--primary-color, #dc2626) !important;
+      background: var(--primary-color) !important;
       color: white !important;
       transform: scale(1.1);
     }
@@ -137,7 +202,7 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
       align-items: center;
       gap: 12px;
       padding: 1.5rem;
-      background: linear-gradient(135deg, var(--primary-color, #dc2626) 0%, var(--primary-color, #b91c1c) 100%);
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-strong) 100%);
       color: white;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
@@ -205,61 +270,26 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
     }
 
     .sidebar-content::-webkit-scrollbar-thumb {
-      background: var(--secondary-color, #e5e7eb);
+      background: var(--secondary-color);
       border-radius: 3px;
     }
 
     .sidebar-content::-webkit-scrollbar-thumb:hover {
-      background: var(--text-color, #d1d5db);
+      background: #d1d5db;
       opacity: 0.5;
     }
 
-    ::ng-deep .sidebar-container .p-menu {
-      background: transparent;
+    .custom-menu {
+      width: 100%;
     }
 
-    ::ng-deep .sidebar-container .p-menuitem-link {
-      border-radius: 8px;
-      margin: 4px 8px;
-      padding: 12px 16px;
-      transition: all 0.3s ease;
-      color: var(--text-color, #1f2937);
+    .menu-section {
+      margin-bottom: 8px;
     }
 
-    ::ng-deep .sidebar-container.collapsed .p-menuitem-link {
-      justify-content: center;
-      padding: 12px 8px;
-    }
-
-    ::ng-deep .sidebar-container.collapsed .p-menuitem-text,
-    ::ng-deep .sidebar-container.collapsed .p-submenu-icon {
-      display: none;
-    }
-
-    ::ng-deep .sidebar-container .p-menuitem-link:hover {
-      background: var(--secondary-color, #fee2e2);
-      color: var(--primary-color, #b91c1c);
-      transform: translateX(4px);
-    }
-
-    ::ng-deep .sidebar-container.collapsed .p-menuitem-link:hover {
-      transform: translateX(0) scale(1.05);
-    }
-
-    ::ng-deep .sidebar-container .p-menuitem-icon {
-      color: var(--primary-color, #dc2626);
-      margin-right: 12px;
-      font-size: 1.1rem;
-    }
-
-    ::ng-deep .sidebar-container.collapsed .p-menuitem-icon {
-      margin-right: 0;
-      font-size: 1.3rem;
-    }
-
-    ::ng-deep .sidebar-container .p-submenu-header {
+    .section-header {
       font-weight: 600;
-      color: var(--text-color, #6b7280);
+      color: #6b7280;
       opacity: 0.7;
       padding: 12px 16px;
       font-size: 0.7rem;
@@ -268,14 +298,115 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
       margin-top: 8px;
     }
 
-    ::ng-deep .sidebar-container.collapsed .p-submenu-header {
-      display: none;
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 8px;
+      margin: 4px 8px;
+      padding: 12px 16px;
+      transition: all 0.3s ease;
+      color: var(--text-color);
+      text-decoration: none;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .menu-item.clickable {
+      justify-content: space-between;
+    }
+
+    .menu-item:hover {
+      background: var(--secondary-color);
+      color: var(--primary-color);
+      transform: translateX(4px);
+    }
+
+    .menu-item.active {
+      background: var(--secondary-color);
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    .menu-item.active i {
+      color: var(--primary-color);
+    }
+
+    .menu-item i:first-child {
+      color: var(--primary-color);
+      font-size: 1.1rem;
+      min-width: 20px;
+    }
+
+    .submenu-icon {
+      margin-left: auto;
+      font-size: 0.875rem;
+      transition: transform 0.3s ease;
+      color: var(--primary-color);
+    }
+
+    .submenu-icon.rotated {
+      transform: rotate(180deg);
+    }
+
+    .submenu {
+      padding-left: 28px;
+      border-left: 2px solid var(--secondary-color);
+      margin-left: 8px;
+      margin-top: 4px;
+    }
+
+    .submenu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 8px;
+      margin: 2px 8px;
+      padding: 10px 16px;
+      transition: all 0.3s ease;
+      color: var(--text-color);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .submenu-item:hover {
+      background: var(--secondary-color);
+      color: var(--primary-color);
+      transform: translateX(4px);
+    }
+
+    .submenu-item.active {
+      background: var(--secondary-color);
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    .submenu-item.active i {
+      color: var(--primary-color);
+    }
+
+    .submenu-item i {
+      color: var(--primary-color);
+      font-size: 1rem;
+    }
+
+    .sidebar-container.collapsed .menu-item {
+      justify-content: center;
+      padding: 12px 8px;
+    }
+
+    .sidebar-container.collapsed .menu-item i:first-child {
+      font-size: 1.3rem;
+    }
+
+    .sidebar-container.collapsed .menu-item:hover {
+      transform: scale(1.05);
     }
 
     .sidebar-footer {
       padding: 16px;
-      border-top: 1px solid var(--secondary-color, #e5e7eb);
-      background: var(--background-color, #fafafa);
+      border-top: 1px solid var(--secondary-color);
+      background: var(--background-color);
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -285,7 +416,7 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
       flex: 1;
       margin-left: 280px;
       overflow-y: auto;
-      background: linear-gradient(135deg, var(--background-color, #f9fafb) 0%, var(--secondary-color, #f3f4f6) 100%);
+      background: linear-gradient(135deg, var(--background-color) 0%, var(--secondary-color) 100%);
       transition: margin-left 0.3s ease;
       min-height: 100vh;
     }
@@ -327,18 +458,47 @@ import { FresiaChatComponent } from '../../ui/components/fresia-chat/fresia-chat
 })
 export class MainLayoutComponent implements OnInit {
   sidebarVisible = true;
+  configExpanded = false;
   @ViewChild('helpDialog') helpDialog!: HelpDialogComponent;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
       this.sidebarVisible = window.innerWidth >= 768;
     }
+
+    // Detectar si estamos en una ruta de configuración y expandir el menú
+    this.checkConfigRoute();
+    
+    // Escuchar cambios de ruta
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.checkConfigRoute();
+    });
+  }
+
+  private checkConfigRoute(): void {
+    const url = this.router.url;
+    if (url.includes('/settings/')) {
+      this.configExpanded = true;
+    }
+  }
+
+  isConfigRoute(): boolean {
+    return this.router.url.includes('/settings/');
   }
 
   toggleSidebar() {
     this.sidebarVisible = !this.sidebarVisible;
+  }
+
+  toggleConfig() {
+    this.configExpanded = !this.configExpanded;
   }
 
   showHelp() {
@@ -346,80 +506,4 @@ export class MainLayoutComponent implements OnInit {
       this.helpDialog.show();
     }
   }
-
-  menuItems: MenuItem[] = [
-    {
-      label: 'NAVEGACIÓN',
-      items: [
-        {
-          label: 'Dashboard',
-          icon: 'pi pi-home',
-          routerLink: '/dashboard'
-        }
-      ]
-    },
-    {
-      label: 'GESTIÓN',
-      items: [
-        {
-          label: 'Tareas',
-          icon: 'pi pi-check-square',
-          routerLink: '/tasks'
-        },
-        {
-          label: 'Facturas',
-          icon: 'pi pi-file',
-          routerLink: '/invoices'
-        },
-        {
-          label: 'Bancos',
-          icon: 'pi pi-wallet',
-          routerLink: '/banking'
-        }
-      ]
-    },
-    {
-      label: 'SISTEMA',
-      items: [
-        {
-          label: 'Configuración',
-          icon: 'pi pi-cog',
-          routerLink: '/settings'
-        }
-      ]
-    }
-  ];
-
-  menuItemsCollapsed: MenuItem[] = [
-    {
-      label: 'Dashboard',
-      icon: 'pi pi-home',
-      routerLink: '/dashboard',
-      title: 'Dashboard'
-    },
-    {
-      label: 'Tareas',
-      icon: 'pi pi-check-square',
-      routerLink: '/tasks',
-      title: 'Tareas'
-    },
-    {
-      label: 'Facturas',
-      icon: 'pi pi-file',
-      routerLink: '/invoices',
-      title: 'Facturas'
-    },
-    {
-      label: 'Bancos',
-      icon: 'pi pi-wallet',
-      routerLink: '/banking',
-      title: 'Bancos'
-    },
-    {
-      label: 'Configuración',
-      icon: 'pi pi-cog',
-      routerLink: '/settings',
-      title: 'Configuración'
-    }
-  ];
 }

@@ -221,6 +221,7 @@
       <div class="section-content" [class.hidden]="tableCollapsed()">
         <app-invoice-table 
           [invoices]="invoices()"
+          (viewInvoice)="onViewInvoice($event)"
           (deleteInvoice)="onDeleteInvoice($event)"
           (editInvoice)="onEditInvoice($event)"
         />

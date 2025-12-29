@@ -50,3 +50,217 @@
   width: 100%;
 }
 
+.lines-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.lines-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-color, #1f2937);
+}
+
+.lines-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Estilos de tabla idénticos al grid de facturas */
+:host ::ng-deep .invoice-p-table .p-datatable-table {
+  table-layout: fixed;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr > th,
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr > td {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  padding: 0.6rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr > th {
+  background-color: var(--background-color, #f9fafb);
+  font-weight: 600;
+  color: var(--text-color, #374151);
+  letter-spacing: 0.25px;
+  border-bottom: 1px solid var(--secondary-color, #e5e7eb);
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-thead > tr > th.p-sortable-column:hover {
+  background-color: var(--secondary-color);
+}
+
+:host ::ng-deep .invoice-p-table .p-sortable-column-icon {
+  color: var(--primary-color);
+  margin-left: 0.25rem;
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr {
+  background-color: var(--card-bg, white);
+  color: var(--text-color, #1f2937);
+}
+
+:host ::ng-deep .invoice-p-table .p-datatable-tbody > tr:hover {
+  background-color: var(--secondary-color, #fafafa);
+}
+
+:host ::ng-deep .invoice-p-table .p-paginator {
+  padding: 0.5rem 0.75rem;
+  background: var(--background-color, #fafafa);
+  border-top: 1px solid var(--secondary-color, #e5e7eb);
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+:host ::ng-deep .invoice-p-table .p-paginator .p-paginator-element {
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  margin: 0 1px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  background: var(--card-bg, white);
+  border: 1px solid var(--secondary-color, #e5e7eb);
+  color: var(--text-color, #374151);
+}
+
+:host ::ng-deep .invoice-p-table .p-paginator .p-paginator-element:hover {
+  background: var(--secondary-color, #f3f4f6);
+  border-color: var(--primary-color, #d1d5db);
+  color: var(--primary-color, #dc2626);
+}
+
+:host ::ng-deep .invoice-p-table .p-paginator .p-paginator-element.p-highlight {
+  background: var(--primary-color, #dc2626);
+  border-color: var(--primary-color, #dc2626);
+  color: white;
+}
+
+:host ::ng-deep .invoice-p-table .p-paginator .p-dropdown {
+  height: 28px;
+  border: 1px solid var(--secondary-color, #e5e7eb);
+  border-radius: 4px;
+  background: var(--card-bg, white);
+}
+
+:host ::ng-deep .invoice-p-table .p-paginator .p-dropdown .p-dropdown-label {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-color, #374151);
+}
+
+.actions-col {
+  width: 120px;
+  text-align: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+:host ::ng-deep .action-buttons .p-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+:host ::ng-deep .action-buttons .p-button .pi {
+  font-size: 0.8rem;
+}
+
+:host ::ng-deep .action-buttons .p-button:hover:not(:disabled) {
+  background: var(--primary-color);
+  color: white;
+}
+
+.table-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.25rem;
+  font-weight: 600;
+  color: var(--text-color, #1f2937);
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.caption-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.caption-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.table-caption i {
+  color: var(--primary-color);
+}
+
+.global-filter {
+  flex: 1;
+  max-width: 260px;
+}
+
+.global-filter input {
+  width: 100%;
+  padding: 0.4rem 0.4rem 0.4rem 2.5rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--secondary-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+.global-filter input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.global-filter .pi-search {
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+.filter-row th {
+  padding: 0.35rem 0.4rem !important;
+}
+
+.filter-row input,
+.filter-row select {
+  width: 100%;
+  padding: 0.35rem 0.4rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--secondary-color, #e5e7eb);
+  border-radius: 4px;
+  color: var(--text-color, #374151);
+  background: var(--card-bg, white);
+}
+
+.line-desc input {
+  max-width: 100%;
+}
+

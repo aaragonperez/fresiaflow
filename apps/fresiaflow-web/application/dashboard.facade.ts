@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, Inject } from '@angular/core';
-import { DashboardTask, BankSummary, Alert } from '../domain/dashboard.model';
+import { DashboardTask, BankSummary, Alert, TaskPriority } from '../domain/dashboard.model';
 import { DashboardApiPort } from '../ports/dashboard.api.port';
 import { DASHBOARD_API_PORT } from '../infrastructure/api/providers';
 
@@ -119,6 +119,50 @@ export class DashboardFacade {
       this.loadBankSummary(),
       this.loadAlerts()
     ]);
+  }
+
+  /**
+   * Marca una tarea como completada.
+   */
+  async completeTask(taskId: string): Promise<void> {
+    await this.dashboardApi.completeTask(taskId);
+    // Actualizar el estado local
+    this._tasks.update(tasks =>
+      tasks.map(t => t.id === taskId ? { ...t, status: 'completed' as any } : t)
+    );
+  }
+
+  /**
+   * Desmarca una tarea como completada.
+   */
+  async uncompleteTask(taskId: string): Promise<void> {
+    await this.dashboardApi.uncompleteTask(taskId);
+    // Actualizar el estado local
+    this._tasks.update(tasks =>
+      tasks.map(t => t.id === taskId ? { ...t, status: 'pending' as any } : t)
+    );
+  }
+
+  /**
+   * Actualiza la prioridad de una tarea.
+   */
+  async updateTaskPriority(taskId: string, priority: TaskPriority): Promise<void> {
+    await this.dashboardApi.updateTaskPriority(taskId, priority);
+    // Actualizar el estado local
+    this._tasks.update(tasks =>
+      tasks.map(t => t.id === taskId ? { ...t, priority } : t)
+    );
+  }
+
+  /**
+   * Alterna el estado de fijado de una tarea.
+   */
+  async toggleTaskPin(taskId: string): Promise<void> {
+    const result = await this.dashboardApi.toggleTaskPin(taskId);
+    // Actualizar el estado local
+    this._tasks.update(tasks =>
+      tasks.map(t => t.id === taskId ? { ...t, isPinned: result.isPinned } : t)
+    );
   }
 }
 

@@ -115,6 +115,33 @@
       </div>
 
       <div class="form-group">
+        <label for="irpfRate">% IRPF</label>
+        <p-inputNumber 
+          id="irpfRate"
+          [(ngModel)]="editData.irpfRate"
+          mode="decimal"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          [min]="0"
+          [max]="100"
+          suffix="%"
+          styleClass="w-full"></p-inputNumber>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="irpfAmount">Retención IRPF</label>
+        <p-inputNumber 
+          id="irpfAmount"
+          [(ngModel)]="editData.irpfAmount"
+          mode="decimal"
+          [minFractionDigits]="2"
+          [maxFractionDigits]="2"
+          styleClass="w-full"></p-inputNumber>
+      </div>
+
+      <div class="form-group">
         <label for="totalAmount">Total *</label>
         <p-inputNumber 
           id="totalAmount"
@@ -137,6 +164,192 @@
         class="w-full"
         placeholder="EUR"
         required />
+    </div>
+
+    <div class="lines-section">
+      <div class="lines-header">
+        <div class="section-title">
+          <i class="pi pi-list"></i>
+          <h4>Líneas de detalle</h4>
+        </div>
+        <div class="lines-actions">
+          <button
+            pButton
+            type="button"
+            class="p-button-rounded p-button-text p-button-sm"
+            icon="pi pi-plus"
+            label="Añadir línea"
+            (click)="addLine()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            class="p-button-text p-button-sm"
+            icon="pi pi-filter-slash"
+            label="Limpiar filtros"
+            (click)="resetLineFilters()"
+          ></button>
+        </div>
+      </div>
+
+      <p-table
+        #linesTable
+        [value]="editData.lines"
+        dataKey="id"
+        [paginator]="true"
+        [rows]="lineRows"
+        [rowsPerPageOptions]="lineRowsPerPageOptions"
+        [rowHover]="true"
+        [sortMode]="'multiple'"
+        [responsiveLayout]="'scroll'"
+        [autoLayout]="true"
+        [globalFilterFields]="['description', 'lineNumber']"
+        styleClass="invoice-p-table paginator-compact"
+      >
+        <ng-template pTemplate="caption">
+          <div class="table-caption">
+            <div class="caption-left">
+              <span class="caption-title"><i class="pi pi-bars"></i> Detalle</span>
+              <span class="p-input-icon-left global-filter">
+                <i class="pi pi-search"></i>
+                <input
+                  pInputText
+                  type="text"
+                  (input)="linesTable.filterGlobal($any($event.target).value, 'contains')"
+                  placeholder="Búsqueda global..."
+                />
+              </span>
+            </div>
+            <button
+              pButton
+              type="button"
+              class="p-button-text p-button-sm"
+              icon="pi pi-filter-slash"
+              label="Limpiar filtros"
+              (click)="linesTable.reset()"
+            ></button>
+          </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="lineNumber"># <p-sortIcon field="lineNumber" /></th>
+            <th pSortableColumn="description">Descripción <p-sortIcon field="description" /></th>
+            <th pSortableColumn="quantity">Cantidad <p-sortIcon field="quantity" /></th>
+            <th pSortableColumn="unitPrice">Precio Unit. <p-sortIcon field="unitPrice" /></th>
+            <th pSortableColumn="taxRate">% IVA <p-sortIcon field="taxRate" /></th>
+            <th pSortableColumn="lineTotal">Total Línea <p-sortIcon field="lineTotal" /></th>
+            <th class="actions-col">Acciones</th>
+          </tr>
+          <tr class="filter-row">
+            <th><input pInputText type="number" placeholder="Nº" (input)="linesTable.filter($any($event.target).value, 'lineNumber', 'contains')" /></th>
+            <th><input pInputText type="text" placeholder="Concepto" (input)="linesTable.filter($any($event.target).value, 'description', 'contains')" /></th>
+            <th><input pInputText type="number" placeholder="Cantidad" (input)="linesTable.filter($any($event.target).value, 'quantity', 'gte')" /></th>
+            <th><input pInputText type="number" placeholder="Precio" (input)="linesTable.filter($any($event.target).value, 'unitPrice', 'gte')" /></th>
+            <th><input pInputText type="number" placeholder="% IVA" (input)="linesTable.filter($any($event.target).value, 'taxRate', 'gte')" /></th>
+            <th><input pInputText type="number" placeholder="Total" (input)="linesTable.filter($any($event.target).value, 'lineTotal', 'gte')" /></th>
+            <th>
+              <button
+                pButton
+                type="button"
+                class="p-button-rounded p-button-text p-button-sm"
+                icon="pi pi-filter-slash"
+                title="Limpiar filtros de columna"
+                (click)="linesTable.clear()"
+              ></button>
+            </th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-line let-rowIndex="rowIndex">
+          <tr>
+            <td>
+              <input
+                pInputText
+                type="number"
+                [(ngModel)]="line.lineNumber"
+                [ngModelOptions]="{standalone: true}"
+                class="w-full"
+              />
+            </td>
+            <td class="line-desc">
+              <input
+                pInputText
+                type="text"
+                [(ngModel)]="line.description"
+                [ngModelOptions]="{standalone: true}"
+                class="w-full"
+                placeholder="Descripción"
+              />
+            </td>
+            <td>
+              <p-inputNumber
+                [(ngModel)]="line.quantity"
+                [ngModelOptions]="{standalone: true}"
+                mode="decimal"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                class="w-full"
+              ></p-inputNumber>
+            </td>
+            <td>
+              <p-inputNumber
+                [(ngModel)]="line.unitPrice"
+                [ngModelOptions]="{standalone: true}"
+                mode="decimal"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="4"
+                class="w-full"
+                [suffix]="' ' + (line.unitPriceCurrency || editData.currency || 'EUR')"
+              ></p-inputNumber>
+            </td>
+            <td>
+              <p-inputNumber
+                [(ngModel)]="line.taxRate"
+                [ngModelOptions]="{standalone: true}"
+                mode="decimal"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                [min]="0"
+                [max]="100"
+                suffix="%"
+                class="w-full"
+              ></p-inputNumber>
+            </td>
+            <td>
+              <p-inputNumber
+                [(ngModel)]="line.lineTotal"
+                [ngModelOptions]="{standalone: true}"
+                mode="decimal"
+                [minFractionDigits]="2"
+                [maxFractionDigits]="2"
+                class="w-full"
+                [suffix]="' ' + (line.lineTotalCurrency || editData.currency || 'EUR')"
+              ></p-inputNumber>
+            </td>
+            <td class="actions-col">
+              <div class="action-buttons">
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-rounded p-button-text p-button-sm p-button-danger"
+                  icon="pi pi-trash"
+                  (click)="removeLine(rowIndex)"
+                  title="Eliminar línea"
+                ></button>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="7" class="text-center">
+              No hay líneas de detalle. Añade una para empezar.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
     </div>
 
     <div class="form-group">

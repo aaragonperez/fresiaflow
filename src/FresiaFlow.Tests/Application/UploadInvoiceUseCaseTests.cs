@@ -12,19 +12,17 @@ namespace FresiaFlow.Tests.Application;
 
 public class UploadInvoiceUseCaseTests
 {
-    private readonly Mock<IInvoiceRepository> _invoiceRepositoryMock;
+    private readonly Mock<IInvoiceReceivedRepository> _invoiceRepositoryMock;
     private readonly Mock<IFileStorage> _fileStorageMock;
     private readonly Mock<IOpenAIClient> _openAIClientMock;
-    private readonly Mock<IPdfTextExtractorService> _pdfTextExtractorMock;
     private readonly InvoiceExtractionPromptOptions _promptOptions;
     private readonly UploadInvoiceUseCase _useCase;
 
     public UploadInvoiceUseCaseTests()
     {
-        _invoiceRepositoryMock = new Mock<IInvoiceRepository>();
+        _invoiceRepositoryMock = new Mock<IInvoiceReceivedRepository>();
         _fileStorageMock = new Mock<IFileStorage>();
         _openAIClientMock = new Mock<IOpenAIClient>();
-        _pdfTextExtractorMock = new Mock<IPdfTextExtractorService>();
         
         _promptOptions = new InvoiceExtractionPromptOptions
         {
@@ -38,12 +36,11 @@ public class UploadInvoiceUseCaseTests
             _invoiceRepositoryMock.Object,
             _fileStorageMock.Object,
             _openAIClientMock.Object,
-            _pdfTextExtractorMock.Object,
             optionsMock.Object);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WithEmptyPdfText_ShouldThrowException()
+    public async Task ExecuteAsync_WithEmptyInvoiceNumber_ShouldThrowException()
     {
         // Arrange
         var fileStream = new MemoryStream();
@@ -55,16 +52,26 @@ public class UploadInvoiceUseCaseTests
             .Setup(x => x.SaveFileAsync(It.IsAny<Stream>(), fileName, contentType, It.IsAny<CancellationToken>()))
             .ReturnsAsync(filePath);
 
-        _pdfTextExtractorMock
-            .Setup(x => x.ExtractTextAsync(filePath, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(string.Empty);
+        _openAIClientMock
+            .Setup(x => x.ExtractStructuredDataFromPdfAsync<InvoiceExtractionResultDto>(
+                filePath,
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new InvoiceExtractionResultDto
+            {
+                InvoiceNumber = string.Empty,
+                SupplierName = string.Empty,
+                TotalAmount = 0,
+                SubtotalAmount = 0,
+                Currency = "EUR"
+            });
 
         var command = new UploadInvoiceCommand(fileStream, fileName, contentType);
 
         // Act & Assert
         var act = async () => await _useCase.ExecuteAsync(command);
         await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("No se pudo extraer texto del PDF.*");
+            .WithMessage("El número de factura no puede estar vacío.");
     }
 
 }

@@ -1,4 +1,5 @@
 using FresiaFlow.Application.Ports.Outbound;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 
@@ -8,7 +9,7 @@ namespace FresiaFlow.Adapters.Outbound.OpenAI;
 /// Adapter para integración con OpenAI API.
 /// Aísla los detalles de implementación de OpenAI del dominio.
 /// </summary>
-public class OpenAIAdapter : IOpenAIClient
+public class OpenAIAdapter : IOpenAIClient, IChatAIClient
 {
     private readonly HttpClient _httpClient;
     private readonly string _apiKey;
@@ -76,18 +77,95 @@ public class OpenAIAdapter : IOpenAIClient
         List<ToolDefinition> availableTools,
         CancellationToken cancellationToken = default)
     {
-        // TODO: Implementar llamada con tool calling
-        // Formato de request:
-        // {
-        //   "model": "gpt-4",
-        //   "messages": [...],
-        //   "tools": [...]
-        // }
+        // Convertir ToolDefinition a formato OpenAI tools
+        var tools = availableTools.Select(tool => new
+        {
+            type = "function",
+            function = new
+            {
+                name = tool.Name,
+                description = tool.Description,
+                parameters = tool.Parameters
+            }
+        }).ToArray();
+
+        // Construir mensajes
+        var messages = new[]
+        {
+            new { role = "system", content = systemPrompt },
+            new { role = "user", content = userMessage }
+        };
+
+        // Usar el modelo configurado, asegurándose de que soporte tool calling
+        var modelForTools = _model.Contains("gpt-4o") ? _model : 
+                           _model.Contains("turbo") ? _model : 
+                           "gpt-4o-mini"; // Fallback a modelo que soporta tool calling
+
+        var requestBody = new
+        {
+            model = modelForTools,
+            messages = messages,
+            tools = tools,
+            tool_choice = "auto", // Dejar que OpenAI decida cuándo usar herramientas
+            temperature = 0.7,
+            max_tokens = 2000
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        _httpClient.DefaultRequestHeaders.Clear();
+        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
+
+        var response = await _httpClient.PostAsync(
+            "https://api.openai.com/v1/chat/completions",
+            content,
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException(
+                $"OpenAI API error ({response.StatusCode}): {errorContent}");
+        }
+
+        var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
         
-        await Task.CompletedTask;
+        var openAiResponse = JsonSerializer.Deserialize<OpenAiChatResponseWithTools>(
+            responseJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        if (openAiResponse?.Choices == null || openAiResponse.Choices.Length == 0)
+        {
+            throw new InvalidOperationException("OpenAI no devolvió ninguna respuesta válida");
+        }
+
+        var choice = openAiResponse.Choices[0];
+        var message = choice.Message;
+
+        // Extraer contenido del mensaje
+        var messageContent = message?.Content?.Trim() ?? string.Empty;
+
+        // Extraer tool calls si existen
+        var toolCalls = new List<ToolCall>();
+        if (message?.ToolCalls != null && message.ToolCalls.Length > 0)
+        {
+            foreach (var toolCall in message.ToolCalls)
+            {
+                if (toolCall.Function != null)
+                {
+                    toolCalls.Add(new ToolCall(
+                        toolCall.Function.Name ?? string.Empty,
+                        toolCall.Function.Arguments ?? "{}"
+                    ));
+                }
+            }
+        }
+
         return new ToolCallResult(
-            "STUB: Respuesta con tools",
-            new List<ToolCall>());
+            string.IsNullOrWhiteSpace(messageContent) ? null : messageContent,
+            toolCalls
+        );
     }
 
     public async Task<T> ExtractStructuredDataAsync<T>(
@@ -396,7 +474,10 @@ IMPORTANTE: Responde ÚNICAMENTE con un objeto JSON válido. No incluyas markdow
         finally
         {
             // 3. Limpiar: eliminar el archivo de OpenAI
-            await DeleteFileFromOpenAIAsync(fileId, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(fileId))
+            {
+                await DeleteFileFromOpenAIAsync(fileId!, cancellationToken);
+            }
         }
     }
 
@@ -441,15 +522,20 @@ IMPORTANTE: Responde ÚNICAMENTE con un objeto JSON válido. No incluyas markdow
 
         var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
         
+        if (string.IsNullOrWhiteSpace(responseJson))
+        {
+            throw new InvalidOperationException("OpenAI devolvió una respuesta vacía al subir el archivo");
+        }
+        
         // #region agent log
-        try { await System.IO.File.AppendAllTextAsync(@"c:\repo\FresiaFlow\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "OpenAIAdapter.cs:360", message = "Respuesta de upload file", data = new { responseJson = responseJson, responseJsonLength = responseJson?.Length ?? 0 }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n", cancellationToken); } catch { }
+        try { await System.IO.File.AppendAllTextAsync(@"c:\repo\FresiaFlow\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "OpenAIAdapter.cs:360", message = "Respuesta de upload file", data = new { responseJson = responseJson, responseJsonLength = responseJson.Length }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n", cancellationToken); } catch { }
         // #endregion
         
         var fileResponse = JsonSerializer.Deserialize<OpenAiFileResponse>(
-            responseJson,
+            responseJson!,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-        if (fileResponse?.Id == null)
+        if (fileResponse?.Id == null || string.IsNullOrWhiteSpace(fileResponse.Id))
         {
             // #region agent log
             try { await System.IO.File.AppendAllTextAsync(@"c:\repo\FresiaFlow\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "OpenAIAdapter.cs:365", message = "FileId es null", data = new { fileResponseIsNull = fileResponse == null, fileIdIsNull = fileResponse?.Id == null }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n", cancellationToken); } catch { }
@@ -458,10 +544,10 @@ IMPORTANTE: Responde ÚNICAMENTE con un objeto JSON válido. No incluyas markdow
         }
 
         // #region agent log
-        try { await System.IO.File.AppendAllTextAsync(@"c:\repo\FresiaFlow\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "OpenAIAdapter.cs:369", message = "FileId extraído correctamente", data = new { fileId = fileResponse.Id, fileIdLength = fileResponse.Id?.Length ?? 0 }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n", cancellationToken); } catch { }
+        try { await System.IO.File.AppendAllTextAsync(@"c:\repo\FresiaFlow\.cursor\debug.log", System.Text.Json.JsonSerializer.Serialize(new { sessionId = "debug-session", runId = "run1", hypothesisId = "B", location = "OpenAIAdapter.cs:369", message = "FileId extraído correctamente", data = new { fileId = fileResponse.Id, fileIdLength = fileResponse.Id.Length }, timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }) + "\n", cancellationToken); } catch { }
         // #endregion
 
-        return fileResponse.Id;
+        return fileResponse.Id!;
     }
 
     private async Task<T> ExtractStructuredDataFromImageAsync<T>(
@@ -556,7 +642,13 @@ IMPORTANTE: Responde ÚNICAMENTE con un objeto JSON válido. No incluyas markdow
             throw new InvalidOperationException("OpenAI no devolvió ninguna respuesta válida");
         }
 
-        var extractedJson = openAiResponse.Choices[0].Message.Content.Trim();
+        var messageContent = openAiResponse.Choices[0].Message?.Content;
+        if (string.IsNullOrWhiteSpace(messageContent))
+        {
+            throw new InvalidOperationException("OpenAI devolvió un mensaje vacío");
+        }
+
+        var extractedJson = messageContent!.Trim();
 
         // Limpiar markdown si existe
         if (extractedJson.StartsWith("```json"))
@@ -618,7 +710,43 @@ IMPORTANTE: Responde ÚNICAMENTE con un objeto JSON válido. No incluyas markdow
     private class OpenAiMessage
     {
         [System.Text.Json.Serialization.JsonPropertyName("content")]
-        public string Content { get; set; } = string.Empty;
+        public string? Content { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("tool_calls")]
+        public OpenAiToolCall[]? ToolCalls { get; set; }
+    }
+
+    private class OpenAiChatResponseWithTools
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("choices")]
+        public OpenAiChoiceWithTools[]? Choices { get; set; }
+    }
+
+    private class OpenAiChoiceWithTools
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("message")]
+        public OpenAiMessage? Message { get; set; }
+    }
+
+    private class OpenAiToolCall
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("id")]
+        public string? Id { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("type")]
+        public string? Type { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("function")]
+        public OpenAiToolCallFunction? Function { get; set; }
+    }
+
+    private class OpenAiToolCallFunction
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
+        public string? Name { get; set; }
+        
+        [System.Text.Json.Serialization.JsonPropertyName("arguments")]
+        public string? Arguments { get; set; }
     }
 
     private class OpenAiFileResponse

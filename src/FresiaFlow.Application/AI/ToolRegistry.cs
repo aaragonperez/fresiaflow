@@ -1,4 +1,9 @@
+using FresiaFlow.Application.Ports.Inbound;
 using FresiaFlow.Application.Ports.Outbound;
+using FresiaFlow.Application.AI.Tools;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using System.Net.Http;
 
 namespace FresiaFlow.Application.AI;
 
@@ -9,10 +14,28 @@ namespace FresiaFlow.Application.AI;
 public class ToolRegistry
 {
     private readonly Dictionary<string, Func<string, CancellationToken, Task<string>>> _tools;
+    private readonly InvoiceFilterTool _invoiceFilterTool;
+    private readonly InvoiceSearchTool _invoiceSearchTool;
+    private readonly WebSearchTool? _webSearchTool;
 
-    public ToolRegistry()
+    public ToolRegistry(
+        IGetFilteredInvoicesUseCase getFilteredInvoicesUseCase,
+        IGetAllInvoicesUseCase getAllInvoicesUseCase,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration,
+        ILogger<WebSearchTool> webSearchLogger)
     {
         _tools = new Dictionary<string, Func<string, CancellationToken, Task<string>>>();
+        _invoiceFilterTool = new InvoiceFilterTool(getFilteredInvoicesUseCase);
+        _invoiceSearchTool = new InvoiceSearchTool(getAllInvoicesUseCase);
+        
+        // Inicializar WebSearchTool solo si el acceso a internet está habilitado
+        var internetEnabled = configuration.GetValue<bool>("ChatAI:InternetAccess:Enabled", true);
+        if (internetEnabled)
+        {
+            _webSearchTool = new WebSearchTool(httpClientFactory, configuration, webSearchLogger);
+        }
+        
         RegisterDefaultTools();
     }
 
@@ -23,6 +46,47 @@ public class ToolRegistry
     {
         return new List<ToolDefinition>
         {
+            new ToolDefinition(
+                "filter_invoices",
+                "Filtra facturas recibidas por año, trimestre, proveedor o tipo de pago. Ejecuta la acción en la aplicación para aplicar los filtros en la tabla.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        year = new { type = "integer", description = "Año fiscal (ej: 2024)" },
+                        quarter = new { type = "integer", @enum = new[] { 1, 2, 3, 4 }, description = "Trimestre (1-4)" },
+                        supplierName = new { type = "string", description = "Nombre del proveedor" },
+                        paymentType = new { type = "string", @enum = new[] { "Bank", "Cash" }, description = "Tipo de pago: Bank o Cash" }
+                    }
+                }
+            ),
+            new ToolDefinition(
+                "search_invoices",
+                "Busca facturas por texto libre. Busca en número de factura, nombre del proveedor, NIF/CIF o notas.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        query = new { type = "string", description = "Texto de búsqueda" }
+                    },
+                    required = new[] { "query" }
+                }
+            ),
+            new ToolDefinition(
+                "web_search",
+                "Realiza una búsqueda en internet para obtener información actualizada. Útil para consultar información que no está en la base de datos local.",
+                new
+                {
+                    type = "object",
+                    properties = new
+                    {
+                        query = new { type = "string", description = "Consulta de búsqueda en internet" }
+                    },
+                    required = new[] { "query" }
+                }
+            ),
             new ToolDefinition(
                 "get_pending_invoices",
                 "Obtiene la lista de facturas pendientes de pago",
@@ -89,8 +153,20 @@ public class ToolRegistry
 
     private void RegisterDefaultTools()
     {
-        // Las herramientas se ejecutarán a través de los casos de uso
-        // Este es un stub que se completará con inyección de dependencias
+        // Registrar herramientas de filtrado y búsqueda de facturas
+        _tools["filter_invoices"] = _invoiceFilterTool.ExecuteAsync;
+        _tools["search_invoices"] = _invoiceSearchTool.ExecuteAsync;
+        
+        // Registrar herramienta de búsqueda web si está disponible
+        if (_webSearchTool != null)
+        {
+            _tools["web_search"] = _webSearchTool.ExecuteAsync;
+        }
+        
+        // Otras herramientas se pueden registrar aquí cuando se implementen
+        // _tools["get_pending_invoices"] = ...
+        // _tools["get_unreconciled_transactions"] = ...
+        // _tools["create_task"] = ...
     }
 }
 

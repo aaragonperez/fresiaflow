@@ -1,0 +1,773 @@
+<div class="accounting-page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1>
+        <i class="pi pi-calculator"></i>
+        Contabilidad
+      </h1>
+      <p class="subtitle">Gestión de asientos contables</p>
+    </div>
+    <div class="header-actions">
+      <button
+        pButton
+        type="button"
+        label="Generar Asientos"
+        icon="pi pi-sync"
+        class="p-button-sm"
+        [loading]="generating()"
+        [disabled]="generating() || regenerating()"
+        (click)="generateEntries()"
+        title="Genera asientos contables automáticamente para todas las facturas"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Regenerar Todos"
+        icon="pi pi-refresh"
+        class="p-button-sm p-button-warning"
+        [loading]="regenerating()"
+        [disabled]="generating() || regenerating()"
+        (click)="regenerateAllEntries()"
+        title="Regenera todos los asientos automáticos (elimina y crea nuevos)"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Regenerar Seleccionados"
+        icon="pi pi-refresh"
+        class="p-button-sm p-button-warning"
+        [loading]="regenerating()"
+        [disabled]="generating() || regenerating() || selectedEntries().length === 0"
+        (click)="regenerateSelectedEntries()"
+        title="Regenera los asientos seleccionados"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Contabilizar Balanceados"
+        icon="pi pi-check-circle"
+        class="p-button-sm p-button-success"
+        [loading]="postingBalanced()"
+        [disabled]="generating() || regenerating() || postingBalanced()"
+        (click)="postAllBalancedEntries()"
+        title="Contabiliza todos los asientos balanceados en borrador"
+      ></button>
+    </div>
+  </div>
+
+  <!-- Estadísticas Contables -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="pi pi-calculator"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ totalEntries() }}</div>
+        <div class="stat-label">Total Asientos</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="pi pi-file"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ totalInvoices() }}</div>
+        <div class="stat-label">Facturas Recibidas</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon error">
+        <i class="pi pi-times-circle"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ failedInvoicesCount() }}</div>
+        <div class="stat-label">Sin Asiento</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon draft">
+        <i class="pi pi-file-edit"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ draftEntries() }}</div>
+        <div class="stat-label">En Borrador</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon posted">
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ postedEntries() }}</div>
+        <div class="stat-label">Contabilizados</div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon error">
+        <i class="pi pi-exclamation-triangle"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ erroneousEntries() }}</div>
+        <div class="stat-label">Erróneos</div>
+      </div>
+    </div>
+
+    <div class="stat-card financial">
+      <div class="stat-icon debit-icon">
+        <i class="pi pi-arrow-right"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ statsTotalDebit() | number:'1.2-2' }} <span class="currency">€</span></div>
+        <div class="stat-label">Total Debe</div>
+      </div>
+    </div>
+
+    <div class="stat-card financial">
+      <div class="stat-icon credit-icon">
+        <i class="pi pi-arrow-left"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ statsTotalCredit() | number:'1.2-2' }} <span class="currency">€</span></div>
+        <div class="stat-label">Total Haber</div>
+      </div>
+    </div>
+
+    <div class="stat-card financial" [class.balanced]="balanceDifference() === 0" [class.unbalanced]="balanceDifference() > 0">
+      <div class="stat-icon" [class.balance-icon]="balanceDifference() === 0" [class.unbalance-icon]="balanceDifference() > 0">
+        <i [class]="balanceDifference() === 0 ? 'pi pi-check' : 'pi pi-times'"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ balanceDifference() | number:'1.2-2' }} <span class="currency">€</span></div>
+        <div class="stat-label">{{ balanceDifference() === 0 ? 'Balanceado' : 'Diferencia' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progreso de generación -->
+  @if (generatingStatus() !== 'idle') {
+    <div class="generation-progress">
+      <div class="progress-header">
+        <div class="progress-status">
+          <i [class]="generatingStatus() === 'generating' ? 'pi pi-spin pi-spinner' : generatingStatus() === 'completed' ? 'pi pi-check-circle' : generatingStatus() === 'cancelled' ? 'pi pi-ban' : 'pi pi-times-circle'"></i>
+          {{ generatingStatus() === 'generating' ? 'Generando asientos...' : generatingStatus() === 'completed' ? 'Completado' : generatingStatus() === 'cancelled' ? 'Cancelado' : 'Error' }}
+        </div>
+        <div class="progress-header-right">
+          @if (generatingTotal() > 0) {
+            <span class="progress-count">
+              {{ generatingProgress() }} / {{ generatingTotal() }} facturas
+            </span>
+          }
+          @if (generatingStatus() === 'generating') {
+            <button
+              pButton
+              type="button"
+              label="Cancelar"
+              icon="pi pi-times"
+              class="p-button-text p-button-sm p-button-danger"
+              (click)="cancelGeneration()"
+              title="Cancela la generación en progreso"
+            ></button>
+          }
+        </div>
+      </div>
+      
+      @if (generatingStatus() === 'generating' || generatingStatus() === 'completed') {
+        <p-progressBar 
+          [value]="generatingPercentage()" 
+          [showValue]="true"
+          [style]="{'height': '24px'}"
+        ></p-progressBar>
+      }
+      
+      @if (generatingMessage()) {
+        <p class="progress-message">{{ generatingMessage() }}</p>
+      }
+      
+      @if (generatingCurrentInvoice() || generatingCurrentSupplier()) {
+        <div class="current-invoice">
+          <i class="pi pi-file"></i>
+          <div class="invoice-info">
+            @if (generatingCurrentInvoice()) {
+              <span class="invoice-number">{{ generatingCurrentInvoice() }}</span>
+            }
+            @if (generatingCurrentSupplier()) {
+              <span class="invoice-supplier">{{ generatingCurrentSupplier() }}</span>
+            }
+          </div>
+        </div>
+      }
+      
+      @if (generatingStatus() === 'generating' && (generatingSuccessCount() > 0 || generatingErrorCount() > 0)) {
+        <div class="progress-stats">
+          @if (generatingSuccessCount() > 0) {
+            <div class="stat-item success">
+              <i class="pi pi-check-circle"></i>
+              <span>Exitosos: {{ generatingSuccessCount() }}</span>
+            </div>
+          }
+          @if (generatingErrorCount() > 0) {
+            <div class="stat-item error">
+              <i class="pi pi-times-circle"></i>
+              <span>Errores: {{ generatingErrorCount() }}</span>
+            </div>
+          }
+        </div>
+      }
+      
+      @if (generatingCurrentError()) {
+        <p-message 
+          severity="error" 
+          [text]="generatingCurrentError()!"
+          [closable]="false"
+        ></p-message>
+      }
+    </div>
+  }
+
+  <!-- Sección de Asientos Contables (Colapsable) -->
+  <div class="collapsible-section">
+    <div class="section-header" (click)="entriesSectionExpanded.set(!entriesSectionExpanded())">
+      <div class="section-title">
+        <i class="pi pi-calculator"></i>
+        <h2>Asientos Contables ({{ totalEntries() }})</h2>
+      </div>
+      <i class="pi pi-angle-down collapse-icon" [class.rotated]="entriesSectionExpanded()"></i>
+    </div>
+
+    @if (entriesSectionExpanded()) {
+      <div class="section-content">
+        <!-- Tabla de Asientos -->
+        <div class="accounting-table-container">
+    <p-table
+      #dt
+      [value]="filteredEntries()"
+      dataKey="id"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [rowHover]="true"
+      [sortMode]="'multiple'"
+      [responsiveLayout]="'scroll'"
+      [autoLayout]="true"
+      [expandedRowKeys]="expandedRowKeys()"
+      [globalFilterFields]="['description', 'reference']"
+      [selection]="selectedEntries()"
+      (selectionChange)="onSelectionChange($event)"
+      styleClass="invoice-p-table paginator-compact"
+      (onRowExpand)="onRowExpand($event)"
+      (onRowCollapse)="onRowCollapse($event)"
+      [lazy]="false"
+    >
+      <ng-template pTemplate="caption">
+        <div class="table-caption">
+          <div class="caption-left">
+            <span class="caption-title"><i class="pi pi-calculator"></i> Contabilidad</span>
+            <span class="p-input-icon-left global-filter">
+              <i class="pi pi-search"></i>
+              <input 
+                pInputText 
+                type="text" 
+                (input)="dt.filterGlobal($any($event.target).value, 'contains')" 
+                placeholder="Búsqueda global..."
+              />
+            </span>
+            <div class="filter-checkbox">
+              <p-checkbox
+                [binary]="true"
+                [(ngModel)]="filterErroneous"
+                inputId="filterErroneous"
+                label="Solo asientos erróneos"
+              ></p-checkbox>
+            </div>
+          </div>
+          <button
+            pButton
+            type="button"
+            class="p-button-text p-button-sm"
+            icon="pi pi-filter-slash"
+            label="Limpiar filtros"
+            (click)="dt.reset(); onFilterClear(); filterErroneous.set(false)"
+          ></button>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 3rem">
+            <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+          </th>
+          <th class="expander-col"></th>
+          <th class="col-number" pSortableColumn="entryNumber">Número <p-sortIcon field="entryNumber" /></th>
+          <th class="col-date" pSortableColumn="entryDate">Fecha <p-sortIcon field="entryDate" /></th>
+          <th class="col-description" pSortableColumn="description">Descripción <p-sortIcon field="description" /></th>
+          <th class="col-reference" pSortableColumn="reference">Referencia <p-sortIcon field="reference" /></th>
+          <th class="col-source" pSortableColumn="source">Origen <p-sortIcon field="source" /></th>
+          <th class="col-status" pSortableColumn="status">Estado <p-sortIcon field="status" /></th>
+          <th class="col-amount" pSortableColumn="totalDebit">Debe <p-sortIcon field="totalDebit" /></th>
+          <th class="col-amount" pSortableColumn="totalCredit">Haber <p-sortIcon field="totalCredit" /></th>
+          <th class="col-balanced">Balanceado</th>
+          <th class="actions-col">Acciones</th>
+        </tr>
+        <tr class="filter-row">
+          <th></th>
+          <th></th>
+          <th><input pInputText type="number" placeholder="Nº" (input)="dt.filter($any($event.target).value, 'entryNumber', 'equals')" /></th>
+          <th><input pInputText type="date" (input)="dt.filter($any($event.target).value, 'entryDate', 'equals')" /></th>
+          <th><input pInputText type="text" placeholder="Buscar" (input)="dt.filter($any($event.target).value, 'description', 'contains')" /></th>
+          <th><input pInputText type="text" placeholder="Buscar" (input)="dt.filter($any($event.target).value, 'reference', 'contains')" /></th>
+          <th>
+            <select class="filter-select" (change)="dt.filter($any($event.target).value || null, 'source', 'equals')">
+              <option value="">Todos</option>
+              <option value="Automatic">Automático</option>
+              <option value="Manual">Manual</option>
+            </select>
+          </th>
+          <th>
+            <select class="filter-select" (change)="dt.filter($any($event.target).value || null, 'status', 'equals')">
+              <option value="">Todos</option>
+              <option value="Draft">Borrador</option>
+              <option value="Posted">Contabilizado</option>
+              <option value="Reversed">Anulado</option>
+            </select>
+          </th>
+          <th><input pInputText type="number" placeholder="≥" (input)="dt.filter($any($event.target).value, 'totalDebit', 'gte')" /></th>
+          <th><input pInputText type="number" placeholder="≥" (input)="dt.filter($any($event.target).value, 'totalCredit', 'gte')" /></th>
+          <th></th>
+          <th>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-filter-slash"
+              class="p-button-text p-button-sm reset-button"
+              (click)="dt.reset(); onFilterClear()"
+              title="Limpiar filtros"
+            ></button>
+          </th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-entry let-expanded="expanded" let-rowIndex="rowIndex">
+        <tr>
+          <td>
+            <p-tableCheckbox [value]="entry"></p-tableCheckbox>
+          </td>
+          <td class="expander-col">
+            <button
+              pButton
+              type="button"
+              class="p-button-text p-button-sm toggle-lines"
+              [pRowToggler]="entry"
+              [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+              [title]="expanded ? 'Colapsar líneas' : 'Expandir líneas'"
+              [disabled]="!entry.lines || entry.lines.length === 0"
+            >
+              <span class="toggle-label">{{ entry.lines?.length || 0 }}</span>
+            </button>
+          </td>
+          <td class="col-number">
+            @if (entry.entryNumber) {
+              <strong>{{ entry.entryNumber }}/{{ entry.entryYear }}</strong>
+            } @else {
+              <span class="text-muted">-</span>
+            }
+          </td>
+          <td class="col-date">{{ entry.entryDate | date:'dd/MM/yyyy' }}</td>
+          <td class="col-description" pTooltip="{{ entry.description }}">{{ entry.description }}</td>
+          <td class="col-reference">{{ entry.reference || '-' }}</td>
+          <td class="col-source">
+            <span class="source-badge" [class.source-automatic]="entry.source === 'Automatic'">
+              {{ getSourceLabel(entry.source) }}
+            </span>
+          </td>
+          <td class="col-status">
+            <p-tag [value]="getStatusLabel(entry.status)" [severity]="getStatusSeverity(entry.status)"></p-tag>
+          </td>
+          <td class="col-amount">{{ entry.totalDebit | number:'1.2-2' }}</td>
+          <td class="col-amount">{{ entry.totalCredit | number:'1.2-2' }}</td>
+          <td class="col-balanced">
+            <i class="pi" [ngClass]="entry.isBalanced ? 'pi-check-circle text-green' : 'pi-times-circle text-red'"></i>
+          </td>
+          <td class="actions-col">
+            <div class="action-buttons">
+              @if (entry.invoiceId) {
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-rounded p-button-text p-button-sm"
+                  icon="pi pi-file"
+                  (click)="viewInvoice(entry.invoiceId!)"
+                  title="Ver factura"
+                ></button>
+              }
+              <button
+                pButton
+                type="button"
+                class="p-button-rounded p-button-text p-button-sm"
+                icon="pi pi-pencil"
+                (click)="openEditDialog(entry)"
+                [disabled]="entry.status === 'Posted' && entry.source === 'Automatic'"
+                title="Editar asiento"
+              ></button>
+              <button
+                pButton
+                type="button"
+                class="p-button-rounded p-button-text p-button-sm"
+                icon="pi pi-check"
+                (click)="postEntry(entry)"
+                [disabled]="entry.status === 'Posted' || !entry.isBalanced"
+                title="Contabilizar asiento"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="rowexpansion" let-entry>
+        <tr>
+          <td colspan="11" class="lines-container">
+            <div class="lines-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Cuenta</th>
+                    <th>Descripción</th>
+                    <th class="text-right">Debe</th>
+                    <th class="text-right">Haber</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let line of entry.lines; trackBy: trackByLineId">
+                    <td>{{ getAccountNameCached(line.accountingAccountId) }}</td>
+                    <td>{{ line.description || '-' }}</td>
+                    <td class="text-right">{{ line.side === 'Debit' ? (line.amount | number:'1.2-2') : '-' }}</td>
+                    <td class="text-right">{{ line.side === 'Credit' ? (line.amount | number:'1.2-2') : '-' }}</td>
+                  </tr>
+                  <tr class="lines-total">
+                    <td colspan="2"><strong>Total</strong></td>
+                    <td class="text-right"><strong>{{ entry.totalDebit | number:'1.2-2' }}</strong></td>
+                    <td class="text-right"><strong>{{ entry.totalCredit | number:'1.2-2' }}</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="11" class="text-center">
+            <div class="empty-message">
+              <i class="pi pi-inbox"></i>
+              <p>No hay asientos contables</p>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Sección de Facturas Fallidas (Colapsable) -->
+  <div class="collapsible-section">
+    <div class="section-header" (click)="failedInvoicesSectionExpanded.set(!failedInvoicesSectionExpanded())">
+      <div class="section-title">
+        <i class="pi pi-exclamation-triangle"></i>
+        <h2>Facturas sin Asiento ({{ failedInvoicesCount() }})</h2>
+      </div>
+      <i class="pi pi-angle-down collapse-icon" [class.rotated]="failedInvoicesSectionExpanded()"></i>
+    </div>
+
+    @if (failedInvoicesSectionExpanded()) {
+      <div class="section-content">
+        @if (failedInvoices().length > 0) {
+          <div class="accounting-table-container">
+            <p-table
+              #dtFailed
+              [value]="failedInvoices()"
+              dataKey="invoiceId"
+              [paginator]="true"
+              [rows]="10"
+              [rowsPerPageOptions]="[10, 25, 50]"
+              [rowHover]="true"
+              [sortMode]="'multiple'"
+              [responsiveLayout]="'scroll'"
+              [autoLayout]="true"
+              styleClass="invoice-p-table paginator-compact"
+            >
+              <ng-template pTemplate="caption">
+                <div class="table-caption">
+                  <div class="caption-left">
+                    <span class="caption-title"><i class="pi pi-exclamation-triangle"></i> Facturas sin asiento</span>
+                    <span class="p-input-icon-left global-filter">
+                      <i class="pi pi-search"></i>
+                      <input 
+                        pInputText 
+                        type="text" 
+                        (input)="dtFailed.filterGlobal($any($event.target).value, 'contains')" 
+                        placeholder="Búsqueda global..."
+                      />
+                    </span>
+                  </div>
+                  <button
+                    pButton
+                    type="button"
+                    class="p-button-text p-button-sm"
+                    icon="pi pi-filter-slash"
+                    label="Limpiar filtros"
+                    (click)="dtFailed.reset()"
+                  ></button>
+                </div>
+              </ng-template>
+
+              <ng-template pTemplate="header">
+                <tr>
+                  <th pSortableColumn="invoiceNumber">Número Factura <p-sortIcon field="invoiceNumber" /></th>
+                  <th pSortableColumn="supplierName">Proveedor <p-sortIcon field="supplierName" /></th>
+                  <th pSortableColumn="reason">Motivo <p-sortIcon field="reason" /></th>
+                  <th class="actions-col">Acciones</th>
+                </tr>
+                <tr class="filter-row">
+                  <th><input pInputText type="text" placeholder="Filtrar" (input)="dtFailed.filter($any($event.target).value, 'invoiceNumber', 'contains')" /></th>
+                  <th><input pInputText type="text" placeholder="Filtrar" (input)="dtFailed.filter($any($event.target).value, 'supplierName', 'contains')" /></th>
+                  <th><input pInputText type="text" placeholder="Filtrar" (input)="dtFailed.filter($any($event.target).value, 'reason', 'contains')" /></th>
+                  <th></th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-failed>
+                <tr>
+                  <td>{{ failed.invoiceNumber }}</td>
+                  <td>{{ failed.supplierName }}</td>
+                  <td>
+                    <span class="error-reason">{{ failed.reason }}</span>
+                  </td>
+                  <td class="actions-col">
+                    <div class="action-buttons">
+                      <button
+                        pButton
+                        type="button"
+                        class="p-button-rounded p-button-text p-button-sm"
+                        icon="pi pi-file"
+                        (click)="viewInvoice(failed.invoiceId)"
+                        title="Ver factura"
+                      ></button>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="4" class="text-center">
+                    <div class="empty-message">
+                      <i class="pi pi-check-circle"></i>
+                      <p>Todas las facturas tienen asiento</p>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        } @else {
+          <div class="empty-message">
+            <i class="pi pi-check-circle"></i>
+            <p>Todas las facturas tienen asiento</p>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Diálogo de Edición -->
+  <p-dialog
+    [visible]="editDialogVisible()"
+    (visibleChange)="onDialogVisibleChange($event)"
+    [header]="editingEntryHeader()"
+    [modal]="true"
+    [style]="{ width: '95vw', maxWidth: '1000px' }"
+    [closable]="true"
+    [dismissableMask]="true"
+    [closeOnEscape]="true"
+    [responsive]="true"
+  >
+    <div *ngIf="editingEntry()" class="edit-dialog-content">
+      <div class="edit-form">
+        <div class="form-group">
+          <label>Fecha</label>
+          <p-calendar
+            [ngModel]="editingEntryDate()"
+            (ngModelChange)="setEditingEntryDate($event)"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [readonly]="isEditingEntryReadonly()"
+          ></p-calendar>
+        </div>
+
+        <div class="form-group">
+          <label>Descripción</label>
+          <input
+            pInputText
+            [ngModel]="editingEntryDescription()"
+            (ngModelChange)="setEditingEntryDescription($event)"
+            [readonly]="isEditingEntryReadonly()"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Notas</label>
+          <textarea
+            pInputTextarea
+            [ngModel]="editingEntryNotes()"
+            (ngModelChange)="setEditingEntryNotes($event)"
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="lines-section">
+        <h3>Líneas del Asiento</h3>
+        
+        <div class="add-line-form">
+          <div class="form-field">
+            <label>Cuenta</label>
+            <p-dropdown
+              [options]="accounts()"
+              [ngModel]="newLineAccount()"
+              (ngModelChange)="newLineAccount.set($event)"
+              optionLabel="name"
+              placeholder="Seleccionar cuenta"
+              [filter]="true"
+              filterBy="code,name"
+              styleClass="p-inputtext-sm"
+            >
+              <ng-template let-account pTemplate="item">
+                <div>{{ account.code }} - {{ account.name }}</div>
+              </ng-template>
+            </p-dropdown>
+          </div>
+          <div class="form-field">
+            <label>Debe/Haber</label>
+            <p-dropdown
+              [options]="sideOptions"
+              [ngModel]="newLineSide()"
+              (ngModelChange)="newLineSide.set($event)"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="p-inputtext-sm"
+            ></p-dropdown>
+          </div>
+          <div class="form-field">
+            <label>Importe</label>
+            <p-inputNumber
+              [ngModel]="newLineAmount()"
+              (ngModelChange)="newLineAmount.set($event)"
+              mode="decimal"
+              [min]="0.01"
+              [step]="0.01"
+              placeholder="0.00"
+              styleClass="p-inputtext-sm"
+            ></p-inputNumber>
+          </div>
+          <div class="form-field">
+            <label>Descripción</label>
+            <input
+              pInputText
+              [ngModel]="newLineDescription()"
+              (ngModelChange)="newLineDescription.set($event)"
+              placeholder="Opcional"
+              styleClass="p-inputtext-sm"
+            />
+          </div>
+          <div class="form-field form-field-button">
+            <button
+              pButton
+              type="button"
+              label="Agregar"
+              icon="pi pi-plus"
+              class="p-button-sm"
+              (click)="addNewLine()"
+            ></button>
+          </div>
+        </div>
+
+        <div class="lines-table-edit">
+          <table>
+            <thead>
+              <tr>
+                <th>Cuenta</th>
+                <th>Debe/Haber</th>
+                <th>Importe</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let line of editingLines(); trackBy: trackByLineId">
+                <td>{{ getAccountNameCached(line.accountingAccountId) }}</td>
+                <td>{{ line.side === 'Debit' ? 'Debe' : 'Haber' }}</td>
+                <td>{{ line.amount | number:'1.2-2' }}</td>
+                <td>{{ line.description || '-' }}</td>
+                <td>
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-trash"
+                    class="p-button-text p-button-sm p-button-danger"
+                    (click)="removeLine(line.id)"
+                  ></button>
+                </td>
+              </tr>
+              <tr class="lines-total" *ngIf="editingLines().length > 0">
+                <td colspan="2" class="total-label"><strong>Total</strong></td>
+                <td class="total-debit">
+                  <div class="total-item">
+                    <span class="total-label-text">Debe:</span>
+                    <span class="total-value">{{ totalDebit() | number:'1.2-2' }}</span>
+                  </div>
+                </td>
+                <td class="total-credit">
+                  <div class="total-item">
+                    <span class="total-label-text">Haber:</span>
+                    <span class="total-value">{{ totalCredit() | number:'1.2-2' }}</span>
+                  </div>
+                </td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+      <div class="dialog-footer-buttons">
+        <button
+          pButton
+          type="button"
+          label="Cancelar"
+          icon="pi pi-times"
+          class="p-button-text"
+          (click)="closeEditDialog()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Guardar"
+          icon="pi pi-check"
+          (click)="saveEntry()"
+          [disabled]="editingLines().length === 0"
+        ></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>
+

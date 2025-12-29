@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { DashboardApiPort } from '../../ports/dashboard.api.port';
-import { DashboardTask, BankSummary, Alert } from '../../domain/dashboard.model';
+import { DashboardTask, BankSummary, Alert, TaskPriority } from '../../domain/dashboard.model';
 import { firstValueFrom } from 'rxjs';
 
 /**
@@ -66,6 +66,35 @@ export class DashboardHttpAdapter implements DashboardApiPort {
     }
   }
 
+  async completeTask(taskId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post(`/api/tasks/${taskId}/complete`, {})
+    );
+  }
+
+  async uncompleteTask(taskId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post(`/api/tasks/${taskId}/uncomplete`, {})
+    );
+  }
+
+  async updateTaskPriority(taskId: string, priority: TaskPriority): Promise<void> {
+    const priorityMap: Record<TaskPriority, number> = {
+      [TaskPriority.High]: 0,
+      [TaskPriority.Medium]: 1,
+      [TaskPriority.Low]: 2
+    };
+    await firstValueFrom(
+      this.http.patch(`/api/tasks/${taskId}/priority`, { priority: priorityMap[priority] })
+    );
+  }
+
+  async toggleTaskPin(taskId: string): Promise<{ isPinned: boolean }> {
+    return await firstValueFrom(
+      this.http.post<{ isPinned: boolean }>(`/api/tasks/${taskId}/toggle-pin`, {})
+    );
+  }
+
   private mapTaskToDomain(dto: DashboardTaskDto): DashboardTask {
     return {
       id: dto.id,
@@ -74,6 +103,7 @@ export class DashboardHttpAdapter implements DashboardApiPort {
       type: dto.type as any,
       priority: dto.priority as any,
       status: dto.status as any,
+      isPinned: dto.isPinned ?? false,
       dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
       createdAt: new Date(dto.createdAt),
       updatedAt: new Date(dto.updatedAt),
@@ -124,6 +154,7 @@ interface DashboardTaskDto {
   type: string;
   priority: string;
   status: string;
+  isPinned?: boolean;
   dueDate?: string;
   createdAt: string;
   updatedAt: string;
