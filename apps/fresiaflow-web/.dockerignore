@@ -1,0 +1,32 @@
+# Archivos y directorios a ignorar en el build de Docker para Angular
+
+# Node modules (se instalan en el contenedor)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Directorios de build (se generan en el contenedor)
+dist/
+.angular/
+
+# Archivos de prueba
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+cypress/fixtures/
+
+# Archivos de configuración de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos temporales
+*.log
+*.tmp
+*~
+

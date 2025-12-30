@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: fresiaflow-postgres
+    environment:
+      POSTGRES_DB: fresiaflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Fresia_31
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fresiaflow-network
+
+  # API Backend .NET
+  api:
+    build:
+      context: .
+      dockerfile: src/FresiaFlow.Api/Dockerfile
+    container_name: fresiaflow-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=fresiaflow;Username=postgres;Password=Fresia_31
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./src/FresiaFlow.Api/uploads:/app/uploads
+      - ./src/FresiaFlow.Api/incoming-invoices:/app/incoming-invoices
+      - ./src/FresiaFlow.Api/processed:/app/processed
+      - ./src/FresiaFlow.Api/appsettings.json:/app/appsettings.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - fresiaflow-network
+    restart: unless-stopped
+
+  # Frontend Angular
+  web:
+    build:
+      context: ./apps/fresiaflow-web
+      dockerfile: Dockerfile
+    container_name: fresiaflow-web
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
+    networks:
+      - fresiaflow-network
+    restart: unless-stopped
+
+networks:
+  fresiaflow-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+

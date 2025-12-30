@@ -1,0 +1,53 @@
+# Archivos y directorios a ignorar en el build de Docker
+
+# Directorios de build
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.angular/
+
+# Archivos de desarrollo
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+**/*.cache
+
+# Archivos de prueba
+**/cypress/videos/
+**/cypress/screenshots/
+**/cypress/downloads/
+**/*.Test.csproj
+**/FresiaFlow.Tests/
+
+# Archivos de configuración local
+**/.env
+**/.env.local
+**/appsettings.Development.json
+**/appsettings.Local.json
+
+# Archivos de Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentación
+docs/
+README.md
+
+# Scripts SQL
+scripts/
+
+# Archivos temporales
+**/*.tmp
+**/*.log
+**/*.swp
+**/*.swo
+**/*~
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+

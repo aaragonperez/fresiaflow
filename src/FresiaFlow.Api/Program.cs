@@ -20,10 +20,9 @@ builder.Services.AddFresiaFlowInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-// Aplicar migraciones automáticamente en desarrollo
-if (app.Environment.IsDevelopment())
+// Aplicar migraciones automáticamente (desarrollo y Docker)
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<FresiaFlowDbContext>();
     
     try
@@ -56,8 +55,9 @@ if (!app.Environment.IsDevelopment())
 // app.UseHttpsRedirection();
 
 // CORS DEBE estar ANTES de UseAuthorization y MapHub para SignalR
+// Permitir tanto localhost (desarrollo) como el contenedor web (Docker)
 app.UseCors(policy => policy
-    .WithOrigins("http://localhost:4200")
+    .WithOrigins("http://localhost:4200", "http://web:80", "http://localhost")
     .AllowAnyMethod()
     .AllowAnyHeader()
     .AllowCredentials());
@@ -73,8 +73,11 @@ app.UseEndpoints(endpoints =>
     endpoints.MapHub<FresiaFlow.Adapters.Inbound.Api.Hubs.SyncProgressHub>("/hubs/sync-progress");
 });
 
-// Configurar puerto 5000
-app.Urls.Add("http://localhost:5000");
+// Configurar puerto 5000 (0.0.0.0 para Docker, localhost para desarrollo local)
+var port = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.Contains("+") == true 
+    ? "http://+:5000" 
+    : "http://0.0.0.0:5000";
+app.Urls.Add(port);
 
 app.Run();
 
