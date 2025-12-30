@@ -80,4 +80,3 @@ ng serve
 ## Namespace Raíz
 
 Todos los proyectos usan el namespace raíz: **FresiaFlow**
-
