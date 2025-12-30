@@ -17,7 +17,17 @@ RUN npm run build
 FROM nginx:alpine
 
 # Copiar archivos construidos
-COPY --from=build /app/dist/fresiaflow-web/browser /usr/share/nginx/html
+# Angular 17 puede generar los archivos en dist/fresiaflow-web/browser o directamente en dist/fresiaflow-web
+# Usamos un script para manejar ambos casos
+COPY --from=build /app/dist/fresiaflow-web /tmp/dist
+
+# Mover archivos a la ubicación correcta (manejar subdirectorio browser si existe)
+RUN if [ -d /tmp/dist/browser ]; then \
+        cp -r /tmp/dist/browser/* /usr/share/nginx/html/; \
+    else \
+        cp -r /tmp/dist/* /usr/share/nginx/html/; \
+    fi && \
+    rm -rf /tmp/dist
 
 # Copiar configuración de nginx personalizada
 COPY nginx.conf /etc/nginx/conf.d/default.conf
